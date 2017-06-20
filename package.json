@@ -26,6 +26,6 @@
     "request-promise-native": "^1.0.4"
   },
   "engines" : {
-    "node" : ">=7"
+    "node" : "7.x"
   }
 }
