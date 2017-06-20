@@ -2,12 +2,12 @@ const Koa = require('koa')
 const koaStatic = require('koa-static')
 const IlpNode = require('ilp-node')
 
-const statsFile = process.env.STATS_FILE
-const credsFile = process.env.CREDS_FILE
-const publicFolder = process.env.PUBLIC_FOLDER
-const hostname = process.env.HOSTNAME
+const statsFile = process.env.STATS_FILE || './data/stats.json'
+const credsFile = process.env.CREDS_FILE || './data/creds.json'
+const publicFolder = process.env.PUBLIC_FOLDER || './public'
+const hostname = process.env.HOSTNAME || 'connectorland.herokuapp.com'
 const port = process.env.PORT
-const probeInterval = process.env.PROBE_INTERVAL
+const probeInterval = process.env.PROBE_INTERVAL || 10000
 
 const ilpNode = new IlpNode(statsFile, credsFile, hostname)
 
