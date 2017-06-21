@@ -13,7 +13,7 @@ var config = {
   // Column order to display
 
   columnOrder: {
-    hosts: 'hostname version lastDownTime health latency balance limit'.split(' '),
+    hosts: 'title version lastDownTime health latency balance limit'.split(' '),
     ledgers: 'ledgerName routes'.split(' '),
     connectors: 'comingbacksoon'.split(' ')
   },
@@ -25,7 +25,7 @@ var config = {
   columnNames: {
 
     hosts: {
-      hostname: 'Host URL',
+      title: 'Host Title',
       version: 'Software Version',
       lastDownTime: 'Up since (hours)',
       health: 'Up %',
@@ -299,7 +299,7 @@ function formatData(obj){
 
           // Links
 
-          if (k == 'hostname') v = '<a href="https://' + v + '/" target="_blank">' + v + '</a>'
+          // if (k == 'hostname') v = '<a href="https://' + v + '/" target="_blank">' + v + '</a>'
 
           // Errors, fail, n/a
 
