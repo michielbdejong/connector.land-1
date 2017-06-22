@@ -17,8 +17,9 @@
   },
   "homepage": "https://github.com/interledger/connector.land#readme",
   "dependencies": {
+    "redis": "^2.7.1"
   },
-  "engines" : {
-    "node" : "7.x"
+  "engines": {
+    "node": "7.x"
   }
 }

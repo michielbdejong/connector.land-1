@@ -1,6 +1,4 @@
-const fs = require('fs')
-const mkdirp = require('mkdirp')
-const path = require('path')
+const redis = require("redis")
 const keypair = require('./lib/keypair')
 const getHostInfo = require('./lib/hostInfo')
 const handleWebFinger = require('./lib/webfinger')
@@ -15,11 +13,14 @@ function hash(hostname) {
       .digest('hex')
 }
 
-function IlpNode (statsFileName, credsFileName, hostname) {
-  console.log('function IlpNode (', { statsFileName, credsFileName, hostname })
+function IlpNode (redisUrl, hostname) {
+  console.log('function IlpNode (', { redisUrl, hostname })
+  this.client = redis.createClient({ url: redisUrl })
+  this.client.on('error', function (err) {
+      console.log('Error ' + err)
+  })
+
   this.hopper = new Hopper()
-  this.statsFileName = statsFileName
-  this.credsFileName = credsFileName
   this.hostname = hostname
   this.stats = {
     hosts: {}
@@ -47,58 +48,44 @@ IlpNode.prototype = {
       console.log('init completed by other')
     }
   },
+  load: function(key) {
+    return new Promise((resolve, reject) => {
+      this.client.get(key, (err, reply) => {
+        if (err) {
+          reject(err)
+        } else {
+          resolve(reply)
+        }
+      })
+    }).then(reply => {
+      if (reply !== null) {
+        console.log('reply!', reply)
+        this[key] = JSON.parse(reply)
+      }
+    })
+  },
+  save: function(key) {
+    return new Promise((resolve, reject) => {
+      this.client.set(key, JSON.stringify(this[key]), (err, reply) => {
+        if (err) {
+          reject(err)
+        } else {
+          resolve(reply)
+        }
+      })
+    })
+  },
   init: async function() {
-    await this.readFile('stats', this.statsFileName)
-    await this.readFile('creds', this.credsFileName)
+    await this.load('stats')
+    await this.load('creds')
     if (this.creds.keypair === undefined) {
       console.log('generating keypair')
       this.creds.keypair = keypair.generate()
       console.log(this.creds.keypair)
-      await this.writeFile('creds', this.credsFileName)
+      await this.save('creds')
       console.log('saved')
     }
     this.tokenStore = new keypair.TokenStore(this.creds.keypair)
-  },
-  readFile: async function(objName, fileName) {
-    await new Promise((resolve, reject) => {
-      fs.readFile(fileName, (err, buf) => {
-        if (err) {
-          console.log(`${objName} file ${fileName} does not exist, creating.`)
-          this.writeFile(objName, fileName).then(resolve)
-        } else {
-          try {
-            this[objName] = JSON.parse(buf)
-          } catch(e) {
-            console.error(`${objName} file ${fileName} exists but is corrupt, fatal.`)
-            reject(e)
-          }
-        }
-        resolve()
-      })
-    })
-  },
-  writeFile: async function(objName, fileName) {
-    await new Promise((resolve, reject) => {
-      fs.writeFile(fileName, JSON.stringify(this[objName], null, 2), (err) => {
-        if (err) {
-          mkdirp(path.dirname(fileName), (err2) => {
-            if (err2) {
-              reject(err2)
-            } else {
-              fs.writeFile(fileName, JSON.stringify(this[objName], null, 2), (err3) => {
-                if (err3) {
-                  reject(err3)
-                } else {
-                  resolve()
-                }
-              })
-            }
-          })
-        } else {
-          resolve()
-        }
-      })
-    })
   },
   testAll: async function() {
     const promises = []
@@ -110,7 +97,7 @@ IlpNode.prototype = {
       promises.push(this.testPeer(this.creds.ledgers[prefix].hostname))
     }
     await Promise.all(promises)
-    await this.writeFile('stats', this.statsFileName)
+    await this.save('stats')
   },
   peerWith: async function(peerHostname) {
     await this.ensureReady()
@@ -129,7 +116,7 @@ IlpNode.prototype = {
     await this.ensureReady()
     this.peerWith(testHostname)
     if (writeStats) {
-      await this.writeFile('stats', this.statsFileName)
+      await this.save('stats')
     }
   },
   testPeer: async function(testHostname) {
