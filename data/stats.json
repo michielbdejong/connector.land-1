@@ -1,7 +1,5 @@
 {
-  "hosts": {
-  },
-  "ledgers": {
-  },
+  "hosts": {},
+  "ledgers": {},
   "connectors": {}
 }
