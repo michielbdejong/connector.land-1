@@ -17,7 +17,7 @@
   },
   "homepage": "https://github.com/interledger/connector.land#readme",
   "dependencies": {
-    "ilp-node": "michielbdejong/ilp-node#1e2ce3d91df2c784d95d08f72c6402225d64a5cd",
+    "ilp-node": "michielbdejong/ilp-node#4adae6ab457a62dde6c78507ac09f9a8398a9b77",
     "koa": "^2.2.0",
     "koa-static": "^3.0.0",
     "mkdirp": "^0.5.1",
