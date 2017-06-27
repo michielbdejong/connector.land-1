@@ -3,7 +3,7 @@ const koaStatic = require('koa-static')
 const IlpNode = require('ilp-node')
 
 const publicFolder = process.env.PUBLIC_FOLDER || './public'
-const hostname = process.env.HOSTNAME || 'connectorland.herokuapp.com'
+const hostname = process.env.HOSTNAME || 'connector.land'
 const port = process.env.PORT || 6000
 const probeInterval = process.env.PROBE_INTERVAL || 10000
 const redisUrl = process.env.REDIS_URL
