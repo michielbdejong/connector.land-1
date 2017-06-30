@@ -22,7 +22,9 @@ app.use(async function(ctx, next) {
       ctx.req.on('data', chunk => str += chunk)
       ctx.req.on('end', resolve)
     })
+    console.log('calling ilpNode.handleRpc')
     ctx.body = await ilpNode.handleRpc(ctx.query, JSON.parse(str))
+    console.log('returned from ilpNode.handleRpc')
     break
   case '/spsp': ctx.body = await ilpNode.handleSpsp()
     break
