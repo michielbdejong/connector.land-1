@@ -46,3 +46,4 @@ console.log('listening on ', port)
 setInterval(() => {
   ilpNode.testAll()
 }, probeInterval)
+console.log('interval set!', proveInterval)
