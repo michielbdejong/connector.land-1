@@ -47,3 +47,5 @@ setInterval(() => {
   ilpNode.testAll()
 }, probeInterval)
 console.log('interval set!', probeInterval)
+  ilpNode.testAll()
+console.log('first test done!')
