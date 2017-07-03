@@ -278,10 +278,13 @@ function formatData(obj){
           }
 
           // routes list
-          if (k == 'routes') v = Object.keys(v).map(ledgerName => {
-            console.log('looking up', ledgerName, peerHostMap)
-            return peerHostMap[ledgerName] || ledgerName
-          }).join(', ')
+          if (k == 'routes') {
+            console.log('found the routes!', v)
+            v = Object.keys(v).map(ledgerName => {
+              console.log('looking up', ledgerName, peerHostMap)
+              return peerHostMap[ledgerName] || ledgerName
+            }).join(', ')
+          }
 
           // Strip extra text from ILP version
 
