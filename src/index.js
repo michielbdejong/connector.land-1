@@ -30,7 +30,7 @@ app.use(async function(ctx, next) {
     break
   case '/stats':
     await ilpNode.ensureReady()
-    ilpNode.collectLedgerStats(1000)
+    await ilpNode.collectLedgerStats(10000)
     if (typeof ctx.query.test === 'string') {
       console.log('testing!', ctx.query.test)
       await ilpNode.testHost(ctx.query.test)
