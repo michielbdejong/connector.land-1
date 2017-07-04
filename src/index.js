@@ -1,6 +1,6 @@
 const Koa = require('koa')
 const koaStatic = require('koa-static')
-const IlpNode = require('ilp-node')
+const IlpNode = require('../ilp-node-src')
 
 const publicFolder = process.env.PUBLIC_FOLDER || './public'
 const hostname = process.env.HOSTNAME || 'connector.land'
