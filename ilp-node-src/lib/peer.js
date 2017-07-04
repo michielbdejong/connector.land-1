@@ -135,6 +135,7 @@ Peer.prototype.getBalance = function() {
 }
 
 Peer.prototype.announceRoute = async function(ledger, curve) {
+  console.log('ANNOUNCING ROUTE!', this.host, this.ledger, ledger, curve)
   await this.postToPeer('send_request', {
     method: 'broadcast_routes',
     data: {
