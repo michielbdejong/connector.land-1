@@ -168,6 +168,9 @@ IlpNode.prototype = {
       console.log('peer not found!', params, JSON.stringify(this.creds.ledgers))
     }
     console.log('handleRpc 3')
+    if (typeof this.creds.ledgers[params.prefix] === 'undefined') {
+      return 'unknown ledger ' + params.prefix
+    }
     const peerHostname = this.creds.ledgers[params.prefix].hostname
     console.log('handle rpc 4', params, body, peerHostname, JSON.stringify(Object.keys(this.peers)), 'are the peer keys')
     return this.peers[peerHostname].handleRpc(params, body)
