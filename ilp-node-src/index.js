@@ -149,6 +149,8 @@ IlpNode.prototype = {
     await this.ensureReady()
     this.stats.hosts[hash(testHostname)].limit = await this.peers[testHostname].getLimit()
     this.stats.hosts[hash(testHostname)].balance = await this.peers[testHostname].getBalance()
+    console.log('announcing test route to', testHostname)
+    await this.peers[testHostname].announceTestRoute()
   },
   announceRoute: async function(ledger, curve, peerHostname) {
     await this.ensureReady()

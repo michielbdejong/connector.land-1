@@ -152,6 +152,10 @@ Peer.prototype.announceRoute = async function(ledger, curve) {
   })
 }
 
+Peer.prototype.announceTestRoute = async function() {
+  return this.announceRoute(`connectorland.${this.peerPublicKey}`, IDENTITY_CURVE)
+}
+
 Peer.prototype.handleRpc = async function(params, bodyObj) {
   switch(params.method) {
   case 'get_limit':
@@ -176,7 +180,8 @@ Peer.prototype.handleRpc = async function(params, bodyObj) {
           this.routes[route.destination_ledger] = route
         })
         console.log('new routes map', Object.keys(this.routes))
-        this.announceRoute(`connectorland.${this.peerPublicKey}`, IDENTITY_CURVE)
+        await this.announceTestRoute()
+        console.log('test route announced!', this.host)
         break
       case 'quote_request':
         const curve = this.hopper.makeCurve(this.host, bodyObj[0].custom.data.destination_ledger)
