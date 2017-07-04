@@ -198,6 +198,12 @@ Peer.prototype.handleRpc = async function(params, bodyObj) {
         console.error('Unknown message method', bodyObj[0].custom.method)
       }
     }
+    return JSON.stringify([ {
+      ledger: this.ledger,
+      from: this.ledger + this.myPublicKey,
+      to: this.ledger + this.peerPublicKey,
+      data: {}
+    } ], null, 2)
     break;
   default:
     return 'Unknown method';
