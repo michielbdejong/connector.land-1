@@ -55,6 +55,8 @@ IlpNode.prototype = {
     if (this.lastLedgerStatsCollectionTime > new Date().getTime() - minDelay) {
       return
     }
+    // erase
+    this.stats.ledgers = {}
     this.lastLedgerStatsCollectionTime = new Date().getTime()
     for (let peerHost in this.peers) {
       const peerTitle = this.stats.hosts[hash(peerHost)].title
