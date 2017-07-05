@@ -57,6 +57,7 @@ IlpNode.prototype = {
     }
     this.lastLedgerStatsCollectionTime = new Date().getTime()
     for (let peerHost in this.peers) {
+      const peerTitle = this.stats.hosts[hash(peerHost)].title
       for (let dest in this.peers[peerHost].routes) {
         if (typeof this.stats.ledgers[dest] === 'undefined') {
           this.stats.ledgers[dest] = {
@@ -64,7 +65,7 @@ IlpNode.prototype = {
              routes: {}
           }
         }
-        this.stats.ledgers[dest].routes[peerHost] = this.peers[peerHost].routes[dest]
+        this.stats.ledgers[dest].routes[peerTitle] = this.peers[peerHost].routes[dest]
       }
     }
     await this.save('stats')
