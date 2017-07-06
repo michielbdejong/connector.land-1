@@ -144,6 +144,9 @@ Peer.prototype.announceRoute = async function(ledger, curve) {
   console.log('ANNOUNCING ROUTE!', this.host, this.ledger, ledger, curve)
   await this.postToPeer('send_request', {
     method: 'broadcast_routes',
+    from: this.ledger + this.myPublicKey,
+    to: this.ledger + this.peerPublicKey,
+    ledger: this.ledger,
     data: {
       new_routes: [ {
         source_ledger: this.ledger,
@@ -181,7 +184,7 @@ Peer.prototype.handleRpc = async function(params, bodyObj) {
     if (Array.isArray(bodyObj) && bodyObj[0].custom) {
       switch(bodyObj[0].custom.method) {
       case 'broadcast_routes':
-        console.log('It is routes!', bodyObj[0].custom.data)
+        console.log('It is routes IN!', params, JSON.stringify(bodyObj, null, 2))
         bodyObj[0].custom.data.new_routes.map(route => {
           this.routes[route.destination_ledger] = route
         })
