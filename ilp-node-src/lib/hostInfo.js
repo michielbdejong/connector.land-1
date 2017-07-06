@@ -8,6 +8,7 @@ function rollingAvg(existing, measured) {
 }
 
 module.exports = async function getHostInfo(hostname, previousObj) {
+  const obj = {}
   try {
     let protocol = 'https'
     if (hostname.split(':')[0] === 'localhost') {
@@ -35,7 +36,6 @@ module.exports = async function getHostInfo(hostname, previousObj) {
     //        href: 'https://red.ilpdemo.org/api/peers/rpc' },
     //      { rel: 'https://interledger.org/rel/settlementMethods',
     //        href: 'https://red.ilpdemo.org/api/settlement_methods' } ] }
-    const obj = {}
     obj.version = data.properties['https://interledger.org/rel/protocolVersion']
     obj.pubKey = data.properties['https://interledger.org/rel/publicKey']
     obj.title = data.properties['https://interledger.org/rel/title']
