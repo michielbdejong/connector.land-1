@@ -124,11 +124,6 @@ IlpNode.prototype = {
     for (let hostnameHash of Object.keys(this.creds.hosts)) {
       promises.push(this.testHost(this.creds.hosts[hostnameHash].hostname, false))
     }
-    for (let prefix of Object.keys(this.creds.ledgers)) {
-      promises.push(this.testPeer(this.creds.ledgers[prefix].hostname).catch(e => {
-        console.error('Error testing peer', this.testPeer(this.creds.ledgers[prefix].hostname))
-      }))
-    }
     await Promise.all(promises)
     await this.save('stats')
     await this.save('creds')
@@ -138,10 +133,10 @@ IlpNode.prototype = {
     console.log(this.creds, this.stats)
     this.creds.hosts[hash(peerHostname)] = { hostname: peerHostname }
     this.stats.hosts[hash(peerHostname)] = await getHostInfo(peerHostname, this.previousStats.hosts[peerHostname] || {})
-    // console.log('this.stats.hosts[peerHostname]', this.stats.hosts[peerHostname])
     if (this.stats.hosts[hash(peerHostname)].pubKey && !this.peers[peerHostname]) {
       console.log('peering!', peerHostname)
       this.peers[peerHostname] = new Peer(peerHostname, this.tokenStore, this.hopper, this.stats.hosts[hash(peerHostname)].pubKey)
+      await this.testPeer(peerHostname)
     }
     this.creds.ledgers[this.peers[peerHostname].ledger] = { hostname: peerHostname }
     console.log('linked', this.peers[peerHostname].ledger, peerHostname)
