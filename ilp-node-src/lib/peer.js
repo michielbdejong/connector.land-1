@@ -64,6 +64,8 @@ Peer.prototype.postToPeer = async function(method, postData) {
     req.on('error', reject)
     req.write(JSON.stringify([ {
       ledger: this.ledger,
+      // work around https://github.com/interledgerjs/ilp-plugin-virtual/issues/74
+      from: this.ledger + this.myPublicKey,
       to: this.ledger + this.peerPublicKey,
       custom: postData
     } ], null, 2))
