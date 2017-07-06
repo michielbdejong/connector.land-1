@@ -232,7 +232,12 @@ function formatData(obj){
 
 
     // Filter out empty rows
-    rows = rows.filter(function(v){ return v !== ''  && (v.title !== undefined || v.ledgerName !== undefined)})
+    rows = rows.filter(function(v){
+      if (v == '') { return false }
+      if (v.title === undefined && v.ledgerName === undefined) { return false }
+      if (typeof v.ledgerName === 'string' && v.ledgerName.startsWith('connectorland.')) { return false }
+      return true
+    })
 
     if (key === 'ledgers') {
       rows = rows.filter(function(v){ return typeof v.ledgerName === 'string' })
