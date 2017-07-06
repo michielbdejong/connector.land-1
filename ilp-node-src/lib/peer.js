@@ -64,9 +64,8 @@ Peer.prototype.postToPeer = async function(method, postData) {
     req.on('error', reject)
     req.write(JSON.stringify([ {
       ledger: this.ledger,
-      from: this.ledger + this.myPublicKey,
       to: this.ledger + this.peerPublicKey,
-      data: postData
+      custom: postData
     } ], null, 2))
     req.end()
   })
@@ -113,7 +112,7 @@ function applyCurve(curve, ret) {
 Peer.prototype.respondQuote = function(curve, quote) {
   [ quote.sourceAmount, quote.destinationAmount ]  = applyCurve(curve, [ quote.sourceAmount, quote.destinationAmount ])
   quote.liquidity_curve = curve
-  return this.postToPeer('send_message', {
+  return this.postToPeer('send_request', {
     method: 'quote_response',
     id: quote.id,
     data: quote
@@ -144,19 +143,15 @@ Peer.prototype.announceRoute = async function(ledger, curve) {
   console.log('ANNOUNCING ROUTE!', this.host, this.ledger, ledger, curve)
   await this.postToPeer('send_request', {
     method: 'broadcast_routes',
-    to: this.ledger + this.peerPublicKey,
-    ledger: this.ledger,
-    custom: {
-      new_routes: [ {
-        source_ledger: this.ledger,
-        destination_ledger: ledger,
-        points: curve,
-        min_message_window: 1,
-        source_account: this.ledger + this.myPublicKey
-      } ],
-      hold_down_time: 45000,
-      unreachable_through_me: []
-    }
+    new_routes: [ {
+      source_ledger: this.ledger,
+      destination_ledger: ledger,
+      points: curve,
+      min_message_window: 1,
+      source_account: this.ledger + this.myPublicKey
+    } ],
+    hold_down_time: 45000,
+    unreachable_through_me: []
   })
 }
 
