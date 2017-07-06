@@ -207,7 +207,7 @@ Peer.prototype.handleRpc = async function(params, bodyObj) {
       ledger: this.ledger,
       from: this.ledger + this.myPublicKey,
       to: this.ledger + this.peerPublicKey,
-      data: {}
+      custom: {}
     } ], null, 2)
     break;
   default:
