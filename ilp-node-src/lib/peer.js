@@ -144,10 +144,9 @@ Peer.prototype.announceRoute = async function(ledger, curve) {
   console.log('ANNOUNCING ROUTE!', this.host, this.ledger, ledger, curve)
   await this.postToPeer('send_request', {
     method: 'broadcast_routes',
-    from: this.ledger + this.myPublicKey,
     to: this.ledger + this.peerPublicKey,
     ledger: this.ledger,
-    data: {
+    custom: {
       new_routes: [ {
         source_ledger: this.ledger,
         destination_ledger: ledger,
