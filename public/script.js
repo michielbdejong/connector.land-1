@@ -232,7 +232,7 @@ function formatData(obj){
 
 
     // Filter out empty rows
-    rows = rows.filter(function(v){ console.log('filter', v); return v !== ''  && v.title !== ''})
+    rows = rows.filter(function(v){ return v !== ''  && v.title !== undefined})
 
     if (key === 'ledgers') {
       rows = rows.filter(function(v){ return typeof v.ledgerName === 'string' })
