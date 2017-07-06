@@ -1,9 +1,5 @@
-// https://cryptii.com/hexadecimal/base64
-// 00 00 00 00
-// 00 00 00 00
-// ff ff ff ff
-// ff ff ff ff
-const IDENTITY_CURVE = 'AAAAAAAAAADDv8O/w7/Dv8O/w7/Dv8O/'
+const IDENTITY_CURVE = 'AAAAAAAAAAAAAAAAAAAAAP////////////////////8=' //  Buffer.from( Array(32+1).join('0') + Array(32+1).join('F'), 'hex').toString('base64')
+                                                                      // [ [ '0', '0' ], [ '18446744073709551615', '18446744073709551615' ] ]
 
 const protocols = {
   http: require('http'),
