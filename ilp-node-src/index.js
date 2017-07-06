@@ -25,7 +25,7 @@ function IlpNode (redisUrl, hostname) {
   this.stats = {
     hosts: {},
     ledgers: {},
-    connectors: {}
+    routes: {}
   }
   this.peers = {}
   this.creds = {
@@ -119,7 +119,7 @@ IlpNode.prototype = {
     this.stats = {
       hosts: {},
       ledgers: {},
-      connectors: {}
+      routes: {}
     }
     for (let hostnameHash of Object.keys(this.creds.hosts)) {
       promises.push(this.testHost(this.creds.hosts[hostnameHash].hostname, false))
