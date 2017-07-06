@@ -127,11 +127,17 @@ Peer.prototype.pay = function(destinationLedger) {
 }
 
 Peer.prototype.getLimit = function() {
-  return this.postToPeer('get_limit')
+  return this.postToPeer('get_limit').then(limit => {
+    console.log('GOT LIMIT!', limit, this.host)
+    return limit
+  })
 }
 
 Peer.prototype.getBalance = function() {
-  return this.postToPeer('get_balance')
+  return this.postToPeer('get_balance').then(balance => {
+    console.log('GOT BALANCE!', balance, this.host)
+    return balance
+  })
 }
 
 Peer.prototype.announceRoute = async function(ledger, curve) {
