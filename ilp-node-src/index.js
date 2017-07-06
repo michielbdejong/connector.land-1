@@ -115,7 +115,13 @@ IlpNode.prototype = {
     console.log('testAll!!!!testAll!!!!testAll!!!!testAll!!!!')
     const promises = []
     await this.ensureReady()
-    for (let hostnameHash of Object.keys(this.stats.hosts)) {
+    this.previousStats = this.stats // for use in running averages
+    this.stats = {
+      hosts: {},
+      ledgers: {},
+      connectors: {}
+    }
+    for (let hostnameHash of Object.keys(this.creds.hosts)) {
       promises.push(this.testHost(this.creds.hosts[hostnameHash].hostname, false))
     }
     for (let prefix of Object.keys(this.creds.ledgers)) {
@@ -131,7 +137,7 @@ IlpNode.prototype = {
     await this.ensureReady()
     console.log(this.creds, this.stats)
     this.creds.hosts[hash(peerHostname)] = { hostname: peerHostname }
-    this.stats.hosts[hash(peerHostname)] = await getHostInfo(peerHostname, this.stats.hosts[peerHostname] || {})
+    this.stats.hosts[hash(peerHostname)] = await getHostInfo(peerHostname, this.previousStats.hosts[peerHostname] || {})
     // console.log('this.stats.hosts[peerHostname]', this.stats.hosts[peerHostname])
     if (this.stats.hosts[hash(peerHostname)].pubKey && !this.peers[peerHostname]) {
       console.log('peering!', peerHostname)

@@ -7,7 +7,7 @@ function rollingAvg(existing, measured) {
   return (existing * 99999 + measured) / 100000
 }
 
-module.exports = async function getHostInfo(hostname, /* by ref */ obj) {
+module.exports = async function getHostInfo(hostname, previousObj) {
   try {
     let protocol = 'https'
     if (hostname.split(':')[0] === 'localhost') {
@@ -35,6 +35,7 @@ module.exports = async function getHostInfo(hostname, /* by ref */ obj) {
     //        href: 'https://red.ilpdemo.org/api/peers/rpc' },
     //      { rel: 'https://interledger.org/rel/settlementMethods',
     //        href: 'https://red.ilpdemo.org/api/settlement_methods' } ] }
+    const obj = {}
     obj.version = data.properties['https://interledger.org/rel/protocolVersion']
     obj.pubKey = data.properties['https://interledger.org/rel/publicKey']
     obj.title = data.properties['https://interledger.org/rel/title']
@@ -47,8 +48,8 @@ module.exports = async function getHostInfo(hostname, /* by ref */ obj) {
       obj.title = configData.title
     }
     console.log('got pubKey!', obj, data.properties)
-    obj.health = rollingAvg(obj.health, 1)
-    obj.latency = rollingAvg(obj.latency, delay)
+    obj.health = rollingAvg(previousObj.health, 1)
+    obj.latency = rollingAvg(previousObj.latency, delay)
 
     if (typeof obj.lastDownTime === 'undefined') {
       obj.lastDownTime = new Date().getTime()
@@ -70,7 +71,7 @@ module.exports = async function getHostInfo(hostname, /* by ref */ obj) {
   } catch (error) {
     console.log('error: ', error)
     if (obj.hostname) {
-      obj.health = rollingAvg(obj.health, 0)
+      obj.health = rollingAvg(previousObj.health, 0)
       obj.lastDownTime = new Date().getTime()
     }
   }
