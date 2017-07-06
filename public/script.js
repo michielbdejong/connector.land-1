@@ -232,7 +232,7 @@ function formatData(obj){
 
 
     // Filter out empty rows
-    rows = rows.filter(function(v){ return v !== ''  && v.title !== ''})
+    rows = rows.filter(function(v){ console.log('filter', v); return v !== ''  && v.title !== ''})
 
     if (key === 'ledgers') {
       rows = rows.filter(function(v){ return typeof v.ledgerName === 'string' })
@@ -241,7 +241,7 @@ function formatData(obj){
     // Sort data
 
     rows.sort(
-      firstBy(v => (v.version === 'Compatible: ilp-kit v3.0.0-alpha1' ? 0 : (v.version === 'Compatible: ilp-kit v2.0.1' || v.version === 'Compatible: ilp-kit v2.0.2' ? 0.5 : 1)))
+      firstBy(v => (v.version === 'Compatible: ilp-kit v3.0.0-alpha2' ? 0 : (v.version === 'Compatible: ilp-kit v2.0.1' || v.version === 'Compatible: ilp-kit v2.0.2' ? 0.5 : 1)))
       .thenBy(v => Math.round(10 * v.health), -1)
       .thenBy('latency'))
 
