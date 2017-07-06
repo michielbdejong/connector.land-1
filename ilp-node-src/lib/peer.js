@@ -151,6 +151,7 @@ Peer.prototype.announceRoute = async function(ledger, curve) {
         destination_ledger: ledger,
         points: curve,
         min_message_window: 1,
+        paths: [ [] ],
         source_account: this.ledger + this.myPublicKey
       } ],
       hold_down_time: 45000,
