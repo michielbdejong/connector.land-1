@@ -167,7 +167,18 @@ Peer.prototype.handleRpc = async function(params, bodyObj) {
     return '0';
     break;
   case 'send_transfer':
-    // TODO: try to fulfill SPSP payment, otherwise, try to forward
+    const ilpPacket = IlpPacket.parse(bodyObj.ilp)
+    const bestHop = hopper.getBestHop(ilpPacket.destination, undefined, ilpPacket.amount)
+    if (bodyObj.amount >= bestHop.sourceAmount) {
+      this.getOtherPeer(bestHop.nextLedger).sendTransfer({
+        amount: bestHop.sourceAmount,
+        expiresAt: bodyObj.expiresAt - 1,
+        condition: bodyObj.condition, 
+        ilp: bodyObj.ilp
+      }, this.ledger) // reference for relaying back fulfillment
+    } else {
+      this.rejectTransfer(bodyObj.id)
+    }
     break;
   case 'send_request':
   case 'send_message':
