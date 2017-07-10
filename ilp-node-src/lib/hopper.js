@@ -2,6 +2,8 @@ const COMMISSION=1.337
 
 const Oer = require('oer-utils')
 
+function Hopper() {}
+
 // this is where the Interledger chaining layer is implemented! Namely, forward a payment if all of:
 // 1) expiry > nextExpiry, so that this connector has time to fulfill
 // 2) amount > exchangeRate(nextAmount), so that this connector makes a bit of money
@@ -117,3 +119,5 @@ Table.prototype = {
     return { nextLedger: bestHop, nextAmount: bestPrice }
   }
 }
+
+module.exports = { Hopper }

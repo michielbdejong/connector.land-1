@@ -1,4 +1,3 @@
-const redis = require("redis")
 const keypair = require('./lib/keypair')
 const getHostInfo = require('./lib/hostInfo')
 const handleWebFinger = require('./lib/webfinger')
@@ -15,12 +14,9 @@ function hash(hostname) {
       .digest('hex')
 }
 
-function IlpNode (redisUrl, hostname, simulator) {
-  console.log('function IlpNode (', { redisUrl, hostname })
-  this.client = redis.createClient({ url: redisUrl })
-  this.client.on('error', function (err) {
-      console.log('Error ' + err)
-  })
+function IlpNode (kv, hostname, simulator) {
+  console.log('IlpNode constructor', hostname)
+  this.kv = kv
   if (simulator) {
     this.fetch = simulator
   } else {
@@ -80,7 +76,7 @@ IlpNode.prototype = {
   },
   load: function(key) {
     return new Promise((resolve, reject) => {
-      this.client.get(key, (err, reply) => {
+      this.kv.get(key, (err, reply) => {
         if (err) {
           reject(err)
         } else {
@@ -96,7 +92,7 @@ IlpNode.prototype = {
   },
   save: function(key) {
     return new Promise((resolve, reject) => {
-      this.client.set(key, JSON.stringify(this[key]), (err, reply) => {
+      this.kv.set(key, JSON.stringify(this[key]), (err, reply) => {
         if (err) {
           reject(err)
         } else {
