@@ -1,5 +1,37 @@
 const COMMISSION=1.337
 
+const Oer = require('oer-utils')
+
+// this is where the Interledger chaining layer is implemented! Namely, forward a payment if all of:
+// 1) expiry > nextExpiry, so that this connector has time to fulfill
+// 2) amount > exchangeRate(nextAmount), so that this connector makes a bit of money
+// 3) condition = nextCondition, so that if the next payment gets fulfilled, this connector can also fulfill the source payment
+Hopper.prototype.forward = function(bodyObj) {
+  // 1) expiry > nextExpiry:
+  if (bodyObj.expiresAt - new Date() < MIN_MESSAGE_WINDOW) { // don't try to predict forward message window, we just care about securing the backward one
+    bodyObj.method = 'reject'
+    bodyObj.reason = 'not enough time'
+    return bodyObj
+  }
+  const nextExpiry = new Date(new Date(bodyObj.expiresAt).getTime() - MIN_MESSAGE_WINDOW)
+
+  const bestHop = this.getBestHop(bodyObj.ilp)
+  // 2) check amount > exchangeRate(nextAmount):
+  if (bodyObj.amount <= bestHop.nextAmount) {
+    bodyObj.method = 'reject'
+    bodyObj.reason = 'not enough money'
+    return bodyObj
+  }
+  // 3) ensure condition = nextCondition, and forward the payment:
+  return this.getPeer(bestHop.nextLedger).pay(bestHop.nextAmount, bodyObj.condition, nextExpiry, bodyObj.ilp)
+  // TODO: implement this.getPeer
+}
+
+// The rest of the Hopper class implements routing tables:
+// Given an ilp packet's address and amount, decide
+// * shortestPath & cheapest nextLedger to forward it to
+// * efficient nextAmount that will satisfy that nextLedger
+
 function calcDistance(route) {
   let longest = 0
   route.paths.map(path => {
@@ -54,8 +86,18 @@ Table.prototype = {
     const subTable = this.findSubTable(targetPrefix.split('.'))
     delete subTable.routes[routeObj.source_ledger]
   },
-  findBestHop(finalAddress, sourceAmount, finalAmount) {
-    const subTable = this.findSubtable(finalAddress)
+  findBestHop(packet) {
+    const reader1 = Oer.Reader.from(Buffer.fromData(packet, 'base64'))
+    const packetType = reader1.readUInt8()
+    if (packetType !== 1 /* TYPE_ILP_PAYMENT */) {
+      throw new Error('Packet has incorrect type')
+    }
+    const contents = reader1.readVarOctetString()
+    const reader2 = Oer.Reader.from(contents)
+    const destAmountHighBits = reader2.readUInt32()
+    const destAmountLowBits = reader2.readUInt32()
+    const destAccount = reader2.readVarOctetString().toString('ascii')
+    const subTable = this.findSubtable(destAccount)
     let bestHop
     let bestDistance
     let bestPrice
@@ -72,6 +114,6 @@ Table.prototype = {
       bestDistance = thisDistance
       bestPrice = thisPrice
     }
-    return { bestHop, bestDistance, bestPrice }
+    return { nextLedger: bestHop, nextAmount: bestPrice }
   }
 }

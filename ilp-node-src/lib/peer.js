@@ -1,5 +1,6 @@
 const IDENTITY_CURVE = 'AAAAAAAAAAAAAAAAAAAAAP////////////////////8=' //  Buffer.from( Array(32+1).join('0') + Array(32+1).join('F'), 'hex').toString('base64')
                                                                       // [ [ '0', '0' ], [ '18446744073709551615', '18446744073709551615' ] ]
+const MIN_MESSAGE_WINDOW = 10000
 
 const protocols = {
   http: require('http'),
@@ -13,22 +14,6 @@ const sha256 = (secret) => {
   return crypto
       .createHmac('sha256', secret)
       .digest('base64')
-}
-
-const deserializeIlpPayment = (base64) => {
-  const reader1 = Oer.Reader.from(Buffer.fromData(base64, 'base64'))
-  const packetType = reader1.readUInt8()
-  if (packetType !== 1 /* TYPE_ILP_PAYMENT */) {
-    throw new Error('Packet has incorrect type')
-  }
-  const contents = reader1.readVarOctetString()
-  const reader2 = Oer.Reader.from(contents)
-  let ret = {}
-  ret.amountHighBits = reader2.readUInt32()
-  ret.amountLowBits = reader2.readUInt32()
-  ret.account = reader2.readVarOctetString().toString('ascii')
-  ret.data = base64url(reader.readVarOctetString())
-  return ret
 }
 
 function Peer(host, tokenStore, hopper, peerPublicKey) {
@@ -153,7 +138,7 @@ Peer.prototype.prepareTestPayment = function(destinationLedger) {
   writer2.writeUInt8(1) // TYPE_ILP_PAYMENT
   writer2.writeVarOctetString(writer1.getBuffer())
   const ilpPacket = writer2.getBuffer().toString('base64')
-  return this.pay('2', sha256('something secret'), 10000,  ilpPacket)
+  return this.pay('2', sha256('something secret'), new Date().getTime() + 10000,  ilpPacket)
 }
 
 Peer.prototype.pay = function(amountStr, condition, timeout, packet) {
@@ -211,18 +196,9 @@ Peer.prototype.handleRpc = async function(params, bodyObj) {
     return '0';
     break;
   case 'send_transfer':
-    const ilpPacket = IlpPacket.parse(bodyObj.ilp)
-    const bestHop = hopper.getBestHop(ilpPacket.destination, undefined, ilpPacket.amount)
-    if (bodyObj.amount >= bestHop.sourceAmount) {
-      this.getOtherPeer(bestHop.nextLedger).sendTransfer({
-        amount: bestHop.sourceAmount,
-        expiresAt: bodyObj.expiresAt - 1,
-        condition: bodyObj.condition,
-        ilp: bodyObj.ilp
-      }, this.ledger) // reference for relaying back fulfillment
-    } else {
-      this.rejectTransfer(bodyObj.id)
-    }
+    const response = this.hopper.forward(bodyObj)
+    // in a future version of the protocol, this response may be put directly in the http response; for now, it's not:
+    this.postToPeer(response.method, response)
     break;
   case 'send_request':
   case 'send_message':
