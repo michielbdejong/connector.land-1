@@ -216,11 +216,11 @@ Peer.prototype.handleRpc = async function(params, bodyObj) {
         bodyObj[0].custom.data.new_routes.map(route => {
           this.hopper.table.addRoute(this.host, route, this.actAsConnector)
         })
-        console.log('new routes map', Object.keys(this.routes))
+        console.log('new routes map', Object.keys(this.hopper.table))
         if (!this.actAsConnector) { // We are connectorland, send a test route:
           await this.announceTestRoute()
+          console.log('test route announced!', this.host)
         }
-        console.log('test route announced!', this.host)
         break
       case 'quote_request':
         const curve = this.hopper.makeCurve(this.host, bodyObj[0].custom.data.destination_ledger)

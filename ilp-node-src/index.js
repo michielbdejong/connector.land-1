@@ -35,7 +35,8 @@ function IlpNode (kv, hostname, simulator, actAsConnector = false) {
     routes: {}
   }
   this.peers = {}
-  this.hopper = new Hopper(this.peers)
+  console.log('instantiating hopper!')
+  this.hopper = new Hopper(this)
   this.creds = {
     hosts: {},  // map hostname hashes back to hostname preimages
     ledgers: {} // for remembering RPC endpoints for peer ledgers

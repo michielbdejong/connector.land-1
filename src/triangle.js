@@ -47,12 +47,12 @@ simulator.registerUri('https://asdf3.com/rpc', (params, bodyStr) => {
 })
 
 node1.peerWith('asdf2.com')
-//node1.peerWith('asdf3.com')
-//
-//node2.peerWith('asdf3.com')
+node1.peerWith('asdf3.com')
+
+node2.peerWith('asdf3.com')
 node2.peerWith('asdf1.com')
-//
-//node3.peerWith('asdf1.com')
-//node3.peerWith('asdf2.com')
+
+node3.peerWith('asdf1.com')
+node3.peerWith('asdf2.com')
 
 setTimeout(() => 0, 1000)

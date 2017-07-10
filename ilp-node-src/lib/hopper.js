@@ -2,9 +2,12 @@ const COMMISSION=1.337
 
 const Oer = require('oer-utils')
 
-function Hopper(peersDict) {
-  this.peers = peersDict
-  this.table = new Table()
+function Hopper(ilpNodeObj) {
+  this.ilpNodeObj = ilpNodeObj
+  if (!this.ilpNodeObj) {
+    console.log('panic 3')
+  }
+  this.table = new Table(this.ilpNodeObj)
 }
 
 // this is where the Interledger chaining layer is implemented! Namely, forward a payment if all of:
@@ -28,7 +31,10 @@ Hopper.prototype.forward = function(bodyObj) {
     return bodyObj
   }
   // 3) ensure condition = nextCondition, and forward the payment:
-  return this.peers[bestHop.nextHost].pay(bestHop.nextAmount, bodyObj.condition, nextExpiry, bodyObj.ilp)
+  if (!this.ilpNodeObj) {
+    console.log('panic 1')
+  }
+  return this.ilpNodeObj.peers[bestHop.nextHost].pay(bestHop.nextAmount, bodyObj.condition, nextExpiry, bodyObj.ilp)
 }
 
 // The rest of the Hopper class implements routing tables:
@@ -66,7 +72,8 @@ function calcPrice(route, sourceAmount, finalAmount) {
   }
 }
 
-function Table() {
+function Table(ilpNodeObj) {
+  this.ilpNodeObj = ilpNodeObj
   this.routes = {}
   this.subTables = {}
 }
@@ -77,19 +84,30 @@ Table.prototype = {
       return this
     } else {
       if (this.subTables[addressParts[0]] === undefined) {
-        this.subTables[addressParts[0]] = new Table()
+        this.subTables[addressParts[0]] = new Table(this.ilpNodeObj)
       }
       return this.subTables[addressParts[0]]
     }
   },
   addRoute(peerHost, routeObj, andBroadcast = false) {
+    console.log('addRoute', peerHost, routeObj, andBroadcast)
+ 
     const subTable = this.findSubTable(routeObj.destination_ledger.split('.'))
+    console.log('subTable found', subTable, peerHost)
     subTable.routes[peerHost] = routeObj
+  if (!this.ilpNodeObj) {
+    console.log('panic 2')
+  }
+    console.log('subTable updated', subTable, this.ilpNodeObj.peers)
     if (andBroadcast) {
-      Object.keys(this.peers).map(otherPeer => {
+      console.log('broadcast forward!', Object.keys(this.ilpNodeObj.peers))
+      Object.keys(this.ilpNodeObj.peers).map(otherPeer => {
         console.log('forwarding broadcast from-to', peerHost, otherPeer)
         if (otherPeer !== peerHost) {
-          this.peers[otherPeer].announceRoute(routeObj.destination_ledger, routeObj.curve) // TODO: apply own rate
+  if (!this.ilpNodeObj) {
+    console.log('panic 4')
+  }
+          this.ilpNodeObj.peers[otherPeer].announceRoute(routeObj.destination_ledger, routeObj.curve) // TODO: apply own rate
         }
       })
     }
