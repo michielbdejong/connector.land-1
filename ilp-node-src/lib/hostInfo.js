@@ -6,6 +6,7 @@ function rollingAvg(existing, measured) {
 }
 
 module.exports = async function getHostInfo(hostname, previousObj, fetch) {
+  console.log('getting host info', hostname, previousObj)
   const obj = {}
   try {
     let protocol = 'https'

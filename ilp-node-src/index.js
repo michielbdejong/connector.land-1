@@ -135,6 +135,7 @@ IlpNode.prototype = {
     await this.save('creds')
   },
   peerWith: async function(peerHostname) {
+    console.log(this.hostname, 'peers with', peerHostname)
     await this.ensureReady()
     console.log(this.creds, this.stats)
     this.creds.hosts[hash(peerHostname)] = { hostname: peerHostname }
