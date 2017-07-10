@@ -9,6 +9,7 @@ module.exports = (resource, creds, hostname) => {
     protocol = 'http'
   }
   if (resource === `${protocol}://${hostname}`) {
+    console.log('host resource!')
     return {
       subject: resource,
       properties: {
@@ -31,4 +32,5 @@ module.exports = (resource, creds, hostname) => {
       }
     }
   }
+  console.log('Uh oh! reached the end!', { resource, creds, hostname })
 }

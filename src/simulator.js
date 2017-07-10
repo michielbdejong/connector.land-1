@@ -1,7 +1,9 @@
 let handlers = {}
 module.exports = async function(url) {
-  console.log('handling fetch!', url, Object.keys(handlers))
-  return handlers[url]
+  console.log('handling fetch!', url.split('?'), Object.keys(handlers))
+  let ret = await handlers[url.split('?')[0]](url)
+  console.log('waited for ret', ret)
+  return { json: () => ret }
 }
 
 module.exports.registerUri = function(url, handler) {
@@ -24,15 +26,18 @@ module.exports.request = function(options, callback) {
         endCb = cb
       }
     },
-    write(str) {
-      bodyStr = str
-    },
-    end() {
-      handlers[url](bodyStr).then(response => {
-        dataCb(response)
-        endCb
-      })
-    }
   }
   callback(res)
+  return {
+    write(str) {
+      bodyStr += str
+    },
+    end() {
+      handlers[url.split('?')[0]](bodyStr).then(response => {
+        dataCb(response)
+        endCb()
+      })
+    },
+    on() {}
+  }
 }

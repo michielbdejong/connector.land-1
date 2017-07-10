@@ -21,6 +21,7 @@ module.exports = async function getHostInfo(hostname, previousObj, fetch) {
     const delay = new Date().getTime() - startTime
 
     // parsing
+    console.log({ response })
     const data = await response.json()
     console.log('data: ', data)
     // { subject: 'https://red.ilpdemo.org',

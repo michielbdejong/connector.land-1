@@ -52,6 +52,7 @@ Peer.prototype.postToPeer = async function(method, postData) {
   }
   return await new Promise((resolve, reject) => {
     const req = this.fetch.request(options, (res) => {
+      console.log('fetch request resulted in', res)
       res.setEncoding('utf8')
       var str = ''
       res.on('data', (chunk) => {

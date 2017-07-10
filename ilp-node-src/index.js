@@ -24,6 +24,11 @@ function IlpNode (kv, hostname, simulator) {
   }
   this.hopper = new Hopper()
   this.hostname = hostname
+  this.previousStats = {
+    hosts: {},
+    ledgers: {},
+    routes: {}
+  }
   this.stats = {
     hosts: {},
     ledgers: {},
@@ -61,6 +66,7 @@ IlpNode.prototype = {
     this.stats.ledgers = {}
     this.lastLedgerStatsCollectionTime = new Date().getTime()
     for (let peerHost in this.peers) {
+      console.log(this.stats, '1')
       const peerTitle = this.stats.hosts[hash(peerHost)].title
       for (let dest in this.peers[peerHost].routes) {
         if (typeof this.stats.ledgers[dest] === 'undefined') {
@@ -117,12 +123,13 @@ IlpNode.prototype = {
     console.log('testAll!!!!testAll!!!!testAll!!!!testAll!!!!')
     const promises = []
     await this.ensureReady()
-    this.previousStats = this.stats // for use in running averages
+    this.previousStats = this.stats || { hosts: {}, ledger: {}, routes: {} } // for use in running averages
     this.stats = {
       hosts: {},
       ledgers: {},
       routes: {}
     }
+    console.log('in testAll!', this.creds)
     for (let hostnameHash of Object.keys(this.creds.hosts)) {
       promises.push(this.testHost(this.creds.hosts[hostnameHash].hostname, false))
       // this fills up the 'hosts' portion of the stats, by calling both testHost and testPeer
@@ -137,7 +144,7 @@ IlpNode.prototype = {
   peerWith: async function(peerHostname) {
     console.log(this.hostname, 'peers with', peerHostname)
     await this.ensureReady()
-    console.log(this.creds, this.stats)
+    console.log(this.creds, this.stats, this.previousStats, '2')
     this.creds.hosts[hash(peerHostname)] = { hostname: peerHostname }
     this.stats.hosts[hash(peerHostname)] = await getHostInfo(peerHostname, this.previousStats.hosts[peerHostname] || {}, this.fetch)
     if (this.stats.hosts[hash(peerHostname)].pubKey && !this.peers[peerHostname]) {
