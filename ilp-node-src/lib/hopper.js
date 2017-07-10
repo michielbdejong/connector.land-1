@@ -41,6 +41,7 @@ Hopper.prototype.forward = function(transfer) {
   }
   if (typeof this.ilpNodeObj.peers[bestHop.nextHost] === 'undefined') {
     console.log('nextHost no peer!', Object.keys(this.ilpNodeObj.peers), bestHop)
+    return { method: 'reject_incoming_transfer' }
   }
   return this.ilpNodeObj.peers[bestHop.nextHost].pay(bestHop.nextAmount, transfer.condition, nextExpiry, transfer.ilp)
 }
