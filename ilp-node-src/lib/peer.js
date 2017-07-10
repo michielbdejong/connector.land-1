@@ -45,7 +45,9 @@ Peer.prototype.newQuoteId = function () {
   return this.quoteId;
 }
 
-Peer.prototype.postToPeer = async function(method, postData) {
+Peer.prototype.postToPeer = async function(method, postData, topLevel = false) {
+  // if topLevel is false, the postData is embedded in a 'custom' field of a bigger
+  // object, otherwise it's not.
   const options = {
     host: this.host,
     port: this.port,
@@ -70,13 +72,17 @@ Peer.prototype.postToPeer = async function(method, postData) {
       })
     })
     req.on('error', reject)
-    req.write(JSON.stringify([ {
-      ledger: this.ledger,
-      // work around https://github.com/interledgerjs/ilp-plugin-virtual/issues/74
-      from: this.ledger + this.myPublicKey,
-      to: this.ledger + this.peerPublicKey,
-      custom: postData
-    } ], null, 2))
+    let obj = postData
+    if (!topLevel) {
+      obj = {
+        ledger: this.ledger,
+        // work around https://github.com/interledgerjs/ilp-plugin-virtual/issues/74
+        from: this.ledger + this.myPublicKey,
+        to: this.ledger + this.peerPublicKey,
+        custom: postData
+      }
+    }
+    req.write(JSON.stringify([ obj ], null, 2))
     req.end()
   })
 }
@@ -151,7 +157,7 @@ Peer.prototype.pay = async function(amountStr, condition, timeout, packet) {
     ilp: packet,
     executionCondition: condition,
     expiresAt: new Date(new Date().getTime() + timeout),
-  })
+  }, true)
 }
 
 Peer.prototype.getLimit = function() {
@@ -204,7 +210,7 @@ Peer.prototype.handleRpc = async function(params, bodyObj) {
     return '0';
     break;
   case 'send_transfer':
-    const response = this.hopper.forward(bodyObj)
+    const response = this.hopper.forward(bodyObj[0])
     // in a future version of the protocol, this response may be put directly in the http response; for now, it's not:
     this.postToPeer(response.method, response)
     break;

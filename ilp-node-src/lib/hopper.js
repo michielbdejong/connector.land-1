@@ -15,28 +15,34 @@ function Hopper(ilpNodeObj) {
 // 1) expiry > nextExpiry, so that this connector has time to fulfill
 // 2) amount > exchangeRate(nextAmount), so that this connector makes a bit of money
 // 3) condition = nextCondition, so that if the next payment gets fulfilled, this connector can also fulfill the source payment
-Hopper.prototype.forward = function(bodyObj) {
-  console.log('forwarding!', bodyObj)
+Hopper.prototype.forward = function(transfer) {
+  console.log('forwarding!', transfer)
   // 1) expiry > nextExpiry:
-  if (bodyObj.expiresAt - new Date() < MIN_MESSAGE_WINDOW) { // don't try to predict forward message window, we just care about securing the backward one
-    bodyObj.method = 'reject'
-    bodyObj.reason = 'not enough time'
-    return bodyObj
+  if (transfer.expiresAt - new Date() < MIN_MESSAGE_WINDOW) { // don't try to predict forward message window, we just care about securing the backward one
+    transfer.method = 'reject'
+    transfer.reason = 'not enough time'
+    return transfer
   }
-  const nextExpiry = new Date(new Date(bodyObj.expiresAt).getTime() - MIN_MESSAGE_WINDOW)
+  const nextExpiry = new Date(new Date(transfer.expiresAt).getTime() - MIN_MESSAGE_WINDOW)
 
-  const bestHop = this.table.findBestHop(bodyObj.ilp)
+  const bestHop = this.table.findBestHop(transfer.ilp)
+  if (bestHop.isLocal) {
+    return 'something secret'
+  }    
   // 2) check amount > exchangeRate(nextAmount):
-  if (bodyObj.amount <= bestHop.nextAmount) {
-    bodyObj.method = 'reject'
-    bodyObj.reason = 'not enough money'
-    return bodyObj
+  if (transfer.amount <= bestHop.nextAmount) {
+    transfer.method = 'reject'
+    transfer.reason = 'not enough money'
+    return transfer
   }
   // 3) ensure condition = nextCondition, and forward the payment:
   if (!this.ilpNodeObj) {
     console.error('panic 1')
   }
-  return this.ilpNodeObj.peers[bestHop.nextHost].pay(bestHop.nextAmount, bodyObj.condition, nextExpiry, bodyObj.ilp)
+  if (typeof this.ilpNodeObj.peers[bestHop.nextHost] === 'undefined') {
+    console.log('nextHost no peer!', Object.keys(this.ilpNodeObj.peers), bestHop)
+  }
+  return this.ilpNodeObj.peers[bestHop.nextHost].pay(bestHop.nextAmount, transfer.condition, nextExpiry, transfer.ilp)
 }
 
 // The rest of the Hopper class implements routing tables:
@@ -54,7 +60,7 @@ function calcDistance(route) {
 }
 
 function calcPrice(route, sourceAmount, finalAmount) {
-  console.log('calcPrice!', route.points)
+  console.log('calcPrice Buffer.from!', route.points)
   let buffer = Buffer.from(route.points, 'base64')
   const array = new Uint32Array(buffer.buffer, buffer.byteOffset, buffer.length / 4)
   let prevX = 0
@@ -120,7 +126,7 @@ Table.prototype = {
     delete subTable.routes[peerHost]
   },
   findBestHop(packet) {
-    console.log('findBestHop!',packet)
+    console.log('findBestHop Buffer.from!', packet)
     const reader1 = Oer.Reader.from(Buffer.from(packet, 'base64'))
     const packetType = reader1.readUInt8()
     if (packetType !== 1 /* TYPE_ILP_PAYMENT */) {
@@ -131,11 +137,19 @@ Table.prototype = {
     const destAmountHighBits = reader2.readUInt32()
     const destAmountLowBits = reader2.readUInt32()
     const destAccount = reader2.readVarOctetString().toString('ascii')
-    const subTable = this.findSubtable(destAccount)
+    if (destAccount.startsWith(this.ilpNodeObj.testLedger)) {
+      return {
+        destAmountHighBits,
+        destAmountLowBits,
+        destAccount
+      }
+    }
+    const subTable = this.findSubTable(destAccount)
     let bestHost
     let bestDistance
     let bestPrice
     for (let peerHost in this.routes) {
+      console.log('considering peer!', peerHost)
       let thisDistance = calcDistance(this.routes[peerHost])
       if (bestHost && bestDistance < thisDistance) {
         continue // too long, discard
