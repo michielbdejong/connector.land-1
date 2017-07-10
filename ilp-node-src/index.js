@@ -23,7 +23,6 @@ function IlpNode (kv, hostname, simulator, actAsConnector = false) {
   } else {
     this.fetch = realFetch
   }
-  this.hopper = new Hopper()
   this.hostname = hostname
   this.previousStats = {
     hosts: {},
@@ -36,6 +35,7 @@ function IlpNode (kv, hostname, simulator, actAsConnector = false) {
     routes: {}
   }
   this.peers = {}
+  this.hopper = new Hopper(this.peers)
   this.creds = {
     hosts: {},  // map hostname hashes back to hostname preimages
     ledgers: {} // for remembering RPC endpoints for peer ledgers
@@ -59,6 +59,7 @@ IlpNode.prototype = {
       console.log('init completed by other')
     }
   },
+  
   collectLedgerStats: async function(minDelay) {
     if (this.lastLedgerStatsCollectionTime > new Date().getTime() - minDelay) {
       return
@@ -160,11 +161,16 @@ IlpNode.prototype = {
       }
       console.log('INSTANTIATING PEER!', this.stats.hosts[hash(peerHostname)])
       this.peers[peerHostname] = new Peer(this.stats.hosts[hash(peerHostname)].peersRpcUri, this.tokenStore, this.hopper, this.stats.hosts[hash(peerHostname)].pubKey, fetch, this.actAsConnector)
-      await this.testPeer(peerHostname)
     }
     this.creds.ledgers[this.peers[peerHostname].ledger] = { hostname: peerHostname }
     console.log('linked', this.peers[peerHostname].ledger, peerHostname)
     await this.save('creds')
+    await new Promise(resolve => {
+      setTimeout(resolve, 100) // wait for peer to also add trustline in triangle set up
+      //TODO: avoid needing this by checking if a route broadcast failed, and repeating it in that case
+    })
+    console.log('peer was added, testing it now', this.creds.ledgers, this.hostname, peerHostname, this.peers[peerHostname].ledger, this.peers[peerHostname].myPublicKey, this.peers[peerHostname].peerPublicKey)
+    await this.testPeer(peerHostname)
   },
   testHost: async function(testHostname, writeStats = true) {
     await this.ensureReady()
@@ -182,21 +188,23 @@ IlpNode.prototype = {
     console.log('FOUND BALANCE!', testHostname, this.stats.hosts[hash(testHostname)].balance)
     console.log('announcing test route to', testHostname)
     await this.peers[testHostname].announceTestRoute()
-    console.log('route announced, now let\'s see if a payment works!')
-    // prepare a test payment to each ledger that was announced by this peer:
-    Object.keys(this.stats.ledgers).map(ledgerName => {
-      console.log('considering', ledgerName)
-      if (ledgerName.substring(0, 'connectorland.'.length) === 'connectorland.') {
-        console.log('looking for peerLedgers', ledgerName)
-        for (let peerLedger of this.stats.ledgers[ledgerName].routes) {
-          if (peerLedger === testHostname) {
-            console.log('found a route to test', testHostname, ledgerName)
-            this.peers[testHostname].prepareTestPayment(ledgerName)
+    setTimeout(() => {
+      console.log('route announced, now let\'s see if a payment works!', Object.keys(this.stats.ledgers))
+      // prepare a test payment to each ledger that was announced by this peer:
+      Object.keys(this.stats.ledgers).map(ledgerName => {
+        console.log('considering', ledgerName)
+        if (ledgerName.substring(0, 'connectorland.'.length) === 'connectorland.') {
+          console.log('looking for peerLedgers', ledgerName)
+          for (let peerLedger of this.stats.ledgers[ledgerName].routes) {
+            if (peerLedger === testHostname) {
+              console.log('found a route to test', testHostname, ledgerName)
+              this.peers[testHostname].prepareTestPayment(ledgerName)
+            }
           }
         }
-      }
-    })
-    console.log('done testing payments for', testHostname)
+      })
+      console.log('done testing payments for', testHostname)
+    }, 100)
   },
   announceRoute: async function(ledger, curve, peerHostname) {
     await this.ensureReady()
@@ -207,11 +215,12 @@ IlpNode.prototype = {
     return handleWebFinger(resource, this.creds, this.hostname)
   },
   handleRpc: async function(params, body) {
-    console.log('handleRpc 1')
+    console.log('handleRpc 1', params, body)
     await this.ensureReady()
     console.log('handleRpc 2')
     if (!this.creds.ledgers[params.prefix]) {
-      console.log('peer not found!', params, JSON.stringify(this.creds.ledgers))
+      console.log('peer not found!', this.creds.ledgers, params, JSON.stringify(this.creds.ledgers))
+      return 'error please retry'
     }
     console.log('handleRpc 3')
     if (typeof this.creds.ledgers[params.prefix] === 'undefined') {

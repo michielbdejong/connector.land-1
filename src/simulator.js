@@ -1,8 +1,9 @@
 let handlers = {}
 module.exports = async function(url) {
-  console.log('handling fetch!', url.split('?'), Object.keys(handlers))
+  if (typeof handlers[url.split('?')[0]] === 'undefined') {
+    console.error('cannot fetch!', url.split('?'), Object.keys(handlers))
+  }
   let ret = await (handlers[url.split('?')[0]] || (() => Promise.resolve()))(url)
-  console.log('waited for ret', ret)
   return { json: () => ret }
 }
 
@@ -11,7 +12,6 @@ module.exports.registerUri = function(url, handler) {
 }
 
 module.exports.request = function(options, callback) {
-  console.log('handling request!', options, Object.keys(handlers))
   let url = 'https://' + options.host + options.path
   let bodyStr = ''
   let dataCb = function() {}
@@ -33,10 +33,24 @@ module.exports.request = function(options, callback) {
       bodyStr += str
     },
     end() {
-      (handlers[url.split('?')[0]] || (() => Promise.resolve()))(bodyStr).then(response => {
-        dataCb(response)
-        endCb()
+      if (typeof handlers[url.split('?')[0]] === 'undefined') {
+        console.log('searching handler', url.split('?')[0], Object.keys(handlers))
+      }
+      let params = {}
+      let pairs = url.split('?')[1].split('&')
+      pairs.map(pair => {
+        params[pair.split('=')[0]] = pair.split('=')[1]
       })
+      console.log('RPC PARAMS', params, typeof handlers[url.split('?')[0]], bodyStr)
+      try {
+        (handlers[url.split('?')[0]] || (() => Promise.resolve()))(params, bodyStr).then(response => {
+          console.log('in simulator response handler!', response)
+          dataCb(response)
+          endCb()
+        })
+      } catch(e) {
+        console.log('what went wrong', e)
+      }
     },
     on() {}
   }

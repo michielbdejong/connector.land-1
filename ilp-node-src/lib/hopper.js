@@ -2,7 +2,10 @@ const COMMISSION=1.337
 
 const Oer = require('oer-utils')
 
-function Hopper() {}
+function Hopper(peersDict) {
+  this.peers = peersDict
+  this.table = new Table()
+}
 
 // this is where the Interledger chaining layer is implemented! Namely, forward a payment if all of:
 // 1) expiry > nextExpiry, so that this connector has time to fulfill
@@ -25,14 +28,13 @@ Hopper.prototype.forward = function(bodyObj) {
     return bodyObj
   }
   // 3) ensure condition = nextCondition, and forward the payment:
-  return this.getPeer(bestHop.nextLedger).pay(bestHop.nextAmount, bodyObj.condition, nextExpiry, bodyObj.ilp)
-  // TODO: implement this.getPeer
+  return this.peers[bestHop.nextHost].pay(bestHop.nextAmount, bodyObj.condition, nextExpiry, bodyObj.ilp)
 }
 
 // The rest of the Hopper class implements routing tables:
 // Given an ilp packet's address and amount, decide
-// * shortestPath & cheapest nextLedger to forward it to
-// * efficient nextAmount that will satisfy that nextLedger
+// * shortestPath & cheapest nextHost to forward it to
+// * efficient nextAmount that will satisfy that nextHost
 
 function calcDistance(route) {
   let longest = 0
@@ -80,13 +82,21 @@ Table.prototype = {
       return this.subTables[addressParts[0]]
     }
   },
-  addRoute(routeObj) {
+  addRoute(peerHost, routeObj, andBroadcast = false) {
     const subTable = this.findSubTable(routeObj.destination_ledger.split('.'))
-    subTable.routes[routeObj.source_ledger] = routeObj
+    subTable.routes[peerHost] = routeObj
+    if (andBroadcast) {
+      Object.keys(this.peers).map(otherPeer => {
+        console.log('forwarding broadcast from-to', peerHost, otherPeer)
+        if (otherPeer !== peerHost) {
+          this.peers[otherPeer].announceRoute(routeObj.destination_ledger, routeObj.curve) // TODO: apply own rate
+        }
+      })
+    }
   },
-  removeRoute(targetPrefix) {
+  removeRoute(targetPrefix, peerHost) {
     const subTable = this.findSubTable(targetPrefix.split('.'))
-    delete subTable.routes[routeObj.source_ledger]
+    delete subTable.routes[peerHost]
   },
   findBestHop(packet) {
     const reader1 = Oer.Reader.from(Buffer.fromData(packet, 'base64'))
@@ -100,23 +110,23 @@ Table.prototype = {
     const destAmountLowBits = reader2.readUInt32()
     const destAccount = reader2.readVarOctetString().toString('ascii')
     const subTable = this.findSubtable(destAccount)
-    let bestHop
+    let bestHost
     let bestDistance
     let bestPrice
-    for (let peerLedger in this.routes) {
-      let thisDistance = calcDistance(this.routes[peerLedger])
-      if (bestHop && bestDistance < thisDistance) {
+    for (let peerHost in this.routes) {
+      let thisDistance = calcDistance(this.routes[peerHost])
+      if (bestHost && bestDistance < thisDistance) {
         continue // too long, discard
       }
-      let thisPrice = calcPrice(this.routes[peerLedger], sourceAmount, finalAmount)
+      let thisPrice = calcPrice(this.routes[peerHost], sourceAmount, destAmountLowBits)
       if (bestHop && bestPrice <= thisPrice) {
         continue // too expensive, discard
       }
-      bestHop = peerLedger
+      bestHost = peerHost
       bestDistance = thisDistance
       bestPrice = thisPrice
     }
-    return { nextLedger: bestHop, nextAmount: bestPrice }
+    return { nextHost: bestHost, nextAmount: bestPrice }
   }
 }
 

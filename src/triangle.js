@@ -10,25 +10,49 @@ const node3 = new IlpNode({ set: function(k, v, cb) { storage['3_' + k] = v; cb(
 simulator.registerUri('https://asdf1.com/.well-known/webfinger', url => {
   return node1.handleWebFinger(url.split('?resource=')[1])
 })
-simulator.registerUri('https://asdf1.com/rpc', node1.handleRpc.bind(node1))
+simulator.registerUri('https://asdf1.com/rpc', (params, bodyStr) => {
+  let bodyObj
+  try {
+    bodyObj = JSON.parse(bodyStr)
+  } catch(e) {
+    console.log('BODY WAS NOT JSON!',  bodyStr)
+  }
+  return node1.handleRpc(params, bodyObj)
+})
 
 simulator.registerUri('https://asdf2.com/.well-known/webfinger', url => {
   return node2.handleWebFinger(url.split('?resource=')[1])
 })
-simulator.registerUri('https://asdf2.com/rpc', node2.handleRpc.bind(node2))
+simulator.registerUri('https://asdf2.com/rpc', (params, bodyStr) => {
+  let bodyObj
+  try {
+    bodyObj = JSON.parse(bodyStr)
+  } catch(e) {
+    console.log('BODY WAS NOT JSON!',  bodyStr)
+  }
+  return node2.handleRpc(params, bodyObj)
+})
 
 simulator.registerUri('https://asdf3.com/.well-known/webfinger', url => {
   return node3.handleWebFinger(url.split('?resource=')[1])
 })
-simulator.registerUri('https://asdf3.com/rpc', node3.handleRpc.bind(node3))
+simulator.registerUri('https://asdf3.com/rpc', (params, bodyStr) => {
+  let bodyObj
+  try {
+    bodyObj = JSON.parse(bodyStr)
+  } catch(e) {
+    console.log('BODY WAS NOT JSON!',  bodyStr)
+  }
+  return node3.handleRpc(params, bodyObj)
+})
 
 node1.peerWith('asdf2.com')
-node1.peerWith('asdf3.com')
-
-node2.peerWith('asdf3.com')
+//node1.peerWith('asdf3.com')
+//
+//node2.peerWith('asdf3.com')
 node2.peerWith('asdf1.com')
-
-node3.peerWith('asdf1.com')
-node3.peerWith('asdf2.com')
+//
+//node3.peerWith('asdf1.com')
+//node3.peerWith('asdf2.com')
 
 setTimeout(() => 0, 1000)

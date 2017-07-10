@@ -13,9 +13,9 @@ const sha256 = (secret) => {
 
 function Peer(uri, tokenStore, hopper, peerPublicKey, fetch, actAsConnector) {
   console.log('Peer', uri, tokenStore, hopper, peerPublicKey)
-  const uriParts = uri.split('/')
+  const uriParts = uri.split('://')[1].split('/')
   const hostParts = uriParts.shift().split(':')
-  this.path = uriParts.join('/')
+  this.path = '/' + uriParts.join('/')
   this.host = hostParts[0]
   if (hostParts.length > 1) {
     this.port = hostParts[1]
@@ -191,6 +191,7 @@ Peer.prototype.announceTestRoute = async function() {
 }
 
 Peer.prototype.handleRpc = async function(params, bodyObj) {
+  console.log('incoming rpc', this.host, params, bodyObj)
   switch(params.method) {
   case 'get_limit':
   case 'get_balance':
@@ -213,12 +214,10 @@ Peer.prototype.handleRpc = async function(params, bodyObj) {
       case 'broadcast_routes':
         console.log('It is routes IN!', params, JSON.stringify(bodyObj, null, 2))
         bodyObj[0].custom.data.new_routes.map(route => {
-          this.routes[route.destination_ledger] = route
+          this.hopper.table.addRoute(this.host, route, this.actAsConnector)
         })
         console.log('new routes map', Object.keys(this.routes))
-        if (this.actAsConnector) {
-          console.log(' TODO: forward this through the hopper!')
-        } else { // We are connectorland, send a test route:
+        if (!this.actAsConnector) { // We are connectorland, send a test route:
           await this.announceTestRoute()
         }
         console.log('test route announced!', this.host)
