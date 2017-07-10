@@ -11,7 +11,7 @@ const sha256 = (secret) => {
       .digest('base64')
 }
 
-function Peer(uri, tokenStore, hopper, peerPublicKey, fetch) {
+function Peer(uri, tokenStore, hopper, peerPublicKey, fetch, actAsConnector) {
   console.log('Peer', uri, tokenStore, hopper, peerPublicKey)
   const uriParts = uri.split('/')
   const hostParts = uriParts.shift().split(':')
@@ -20,6 +20,7 @@ function Peer(uri, tokenStore, hopper, peerPublicKey, fetch) {
   if (hostParts.length > 1) {
     this.port = hostParts[1]
   }
+  this.actAsConnector = actAsConnector
   this.rate = 1.0 // for now, all peers are in USD
   this.fetch = fetch
   this.quoteId = 0
@@ -215,7 +216,11 @@ Peer.prototype.handleRpc = async function(params, bodyObj) {
           this.routes[route.destination_ledger] = route
         })
         console.log('new routes map', Object.keys(this.routes))
-        await this.announceTestRoute()
+        if (this.actAsConnector) {
+          console.log(' TODO: forward this through the hopper!')
+        } else { // We are connectorland, send a test route:
+          await this.announceTestRoute()
+        }
         console.log('test route announced!', this.host)
         break
       case 'quote_request':

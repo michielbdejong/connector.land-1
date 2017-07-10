@@ -14,9 +14,10 @@ function hash(hostname) {
       .digest('hex')
 }
 
-function IlpNode (kv, hostname, simulator) {
+function IlpNode (kv, hostname, simulator, actAsConnector = false) {
   console.log('IlpNode constructor', hostname)
   this.kv = kv
+  this.actAsConnector = actAsConnector
   if (simulator) {
     this.fetch = simulator
   } else {
@@ -158,7 +159,7 @@ IlpNode.prototype = {
         fetch = require('node-fetch')
       }
       console.log('INSTANTIATING PEER!', this.stats.hosts[hash(peerHostname)])
-      this.peers[peerHostname] = new Peer(this.stats.hosts[hash(peerHostname)].peersRpcUri, this.tokenStore, this.hopper, this.stats.hosts[hash(peerHostname)].pubKey, fetch)
+      this.peers[peerHostname] = new Peer(this.stats.hosts[hash(peerHostname)].peersRpcUri, this.tokenStore, this.hopper, this.stats.hosts[hash(peerHostname)].pubKey, fetch, this.actAsConnector)
       await this.testPeer(peerHostname)
     }
     this.creds.ledgers[this.peers[peerHostname].ledger] = { hostname: peerHostname }
