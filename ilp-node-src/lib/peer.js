@@ -18,6 +18,7 @@ function Peer(uri, tokenStore, hopper, peerPublicKey, fetch, actAsConnector) {
   const hostParts = uriParts.shift().split(':')
   this.path = '/' + uriParts.join('/')
   this.host = hostParts[0]
+  this.testLedger = 'g.dns.' + this.host.split('.').reverse().join('.')
   if (hostParts.length > 1) {
     this.port = hostParts[1]
   }
@@ -128,11 +129,11 @@ Peer.prototype.respondQuote = function(curve, quote) {
   })
 }
 
-Peer.prototype.prepareTestPayment = function(destinationLedger) {
+Peer.prototype.prepareTestPayment = async function() {
   const writer1 = new Oer.Writer()
   writer1.writeUInt32(0)
   writer1.writeUInt32(1)
-  writer1.writeVarOctetString(Buffer.from(destinationLedger + 'test', 'ascii'))
+  writer1.writeVarOctetString(Buffer.from(this.testLedger + 'test', 'ascii'))
   writer1.writeVarOctetString(Buffer.from('', 'base64'))
   writer1.writeUInt8(0)
   const writer2 = new Oer.Writer()
@@ -142,7 +143,7 @@ Peer.prototype.prepareTestPayment = function(destinationLedger) {
   return this.pay('2', sha256('something secret'), new Date().getTime() + 10000,  ilpPacket)
 }
 
-Peer.prototype.pay = function(amountStr, condition, timeout, packet) {
+Peer.prototype.pay = async function(amountStr, condition, timeout, packet) {
   return this.postToPeer('send_transfer', {
     ilp: packet,
     id: uuid(),
@@ -192,8 +193,7 @@ Peer.prototype.announceTestRoute = async function() {
     return
   }
   this.testRouteAnnounced = true
-  let testLedger = 'g.dns.' + this.host.split('.').reverse().join('.')
-  return this.announceRoute(testLedger, IDENTITY_CURVE)
+  return this.announceRoute(this.testLedger, IDENTITY_CURVE)
 }
 
 Peer.prototype.handleRpc = async function(params, bodyObj) {
@@ -222,6 +222,10 @@ Peer.prototype.handleRpc = async function(params, bodyObj) {
         bodyObj[0].custom.data.new_routes.map(route => {
           console.log('adding the route; I am', this.hopper.ilpNodeObj.hostname, this.actAsConnector, 'the announcing peer is ', this.host, 'the route is for', route.destination_ledger)
           this.hopper.table.addRoute(this.host, route, this.actAsConnector)
+          if (route.destination_ledger = this.testLedger) {
+            console.log('loop found!')
+            this.prepareTestPayment()
+          } 
         })
         // console.log('new routes map', Object.keys(this.hopper.table))
         if (!this.actAsConnector) { // We are connectorland, send a test route:

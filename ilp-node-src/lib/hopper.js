@@ -1,4 +1,5 @@
 const COMMISSION=1.337
+const MIN_MESSAGE_WINDOW = 10000
 
 const Oer = require('oer-utils')
 
@@ -15,6 +16,7 @@ function Hopper(ilpNodeObj) {
 // 2) amount > exchangeRate(nextAmount), so that this connector makes a bit of money
 // 3) condition = nextCondition, so that if the next payment gets fulfilled, this connector can also fulfill the source payment
 Hopper.prototype.forward = function(bodyObj) {
+  console.log('forwarding!', bodyObj)
   // 1) expiry > nextExpiry:
   if (bodyObj.expiresAt - new Date() < MIN_MESSAGE_WINDOW) { // don't try to predict forward message window, we just care about securing the backward one
     bodyObj.method = 'reject'
@@ -23,7 +25,7 @@ Hopper.prototype.forward = function(bodyObj) {
   }
   const nextExpiry = new Date(new Date(bodyObj.expiresAt).getTime() - MIN_MESSAGE_WINDOW)
 
-  const bestHop = this.getBestHop(bodyObj.ilp)
+  const bestHop = this.table.findBestHop(bodyObj.ilp)
   // 2) check amount > exchangeRate(nextAmount):
   if (bodyObj.amount <= bestHop.nextAmount) {
     bodyObj.method = 'reject'
@@ -52,6 +54,7 @@ function calcDistance(route) {
 }
 
 function calcPrice(route, sourceAmount, finalAmount) {
+  console.log('calcPrice!', route.points)
   let buffer = Buffer.from(route.points, 'base64')
   const array = new Uint32Array(buffer.buffer, buffer.byteOffset, buffer.length / 4)
   let prevX = 0
@@ -117,7 +120,8 @@ Table.prototype = {
     delete subTable.routes[peerHost]
   },
   findBestHop(packet) {
-    const reader1 = Oer.Reader.from(Buffer.fromData(packet, 'base64'))
+    console.log('findBestHop!',packet)
+    const reader1 = Oer.Reader.from(Buffer.from(packet, 'base64'))
     const packetType = reader1.readUInt8()
     if (packetType !== 1 /* TYPE_ILP_PAYMENT */) {
       throw new Error('Packet has incorrect type')
