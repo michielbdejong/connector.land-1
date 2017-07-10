@@ -11,9 +11,11 @@ const sha256 = (secret) => {
       .digest('base64')
 }
 
-function Peer(host, tokenStore, hopper, peerPublicKey, fetch) {
-  console.log('Peer', host, tokenStore, hopper, peerPublicKey)
-  const hostParts = host.split(':')
+function Peer(uri, tokenStore, hopper, peerPublicKey, fetch) {
+  console.log('Peer', uri, tokenStore, hopper, peerPublicKey)
+  const uriParts = uri.split('/')
+  const hostParts = uriParts.shift().split(':')
+  this.path = uriParts.join('/')
   this.host = hostParts[0]
   if (hostParts.length > 1) {
     this.port = hostParts[1]
@@ -28,6 +30,7 @@ function Peer(host, tokenStore, hopper, peerPublicKey, fetch) {
   this.myPublicKey = tokenStore.peeringKeyPair.pub
   this.routes = {}
   this.hopper = hopper
+  console.log('hopper set, constructor done!')
 }
 
 Peer.prototype.newQuoteId = function () {
@@ -43,7 +46,7 @@ Peer.prototype.postToPeer = async function(method, postData) {
   const options = {
     host: this.host,
     port: this.port,
-    path: `/api/peers/rpc?method=${method}&prefix=${this.ledger}`,
+    path: this.path + `?method=${method}&prefix=${this.ledger}`,
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -179,6 +182,7 @@ Peer.prototype.announceRoute = async function(ledger, curve) {
       unreachable_through_me: []
     }
   })
+  console.log('route announced, nice!')
 }
 
 Peer.prototype.announceTestRoute = async function() {

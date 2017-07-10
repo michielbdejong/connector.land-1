@@ -157,7 +157,8 @@ IlpNode.prototype = {
       } else {
         fetch = require('node-fetch')
       }
-      this.peers[peerHostname] = new Peer(peerHostname, this.tokenStore, this.hopper, this.stats.hosts[hash(peerHostname)].pubKey, fetch)
+      console.log('INSTANTIATING PEER!', this.stats.hosts[hash(peerHostname)])
+      this.peers[peerHostname] = new Peer(this.stats.hosts[hash(peerHostname)].peersRpcUri, this.tokenStore, this.hopper, this.stats.hosts[hash(peerHostname)].pubKey, fetch)
       await this.testPeer(peerHostname)
     }
     this.creds.ledgers[this.peers[peerHostname].ledger] = { hostname: peerHostname }
@@ -172,6 +173,7 @@ IlpNode.prototype = {
     }
   },
   testPeer: async function(testHostname) {
+    console.log('testing the peer!', testHostname)
     await this.ensureReady()
     this.stats.hosts[hash(testHostname)].limit = await this.peers[testHostname].getLimit()
     console.log('FOUND LIMIT!', testHostname, this.stats.hosts[hash(testHostname)].limit)
@@ -179,16 +181,21 @@ IlpNode.prototype = {
     console.log('FOUND BALANCE!', testHostname, this.stats.hosts[hash(testHostname)].balance)
     console.log('announcing test route to', testHostname)
     await this.peers[testHostname].announceTestRoute()
+    console.log('route announced, now let\'s see if a payment works!')
     // prepare a test payment to each ledger that was announced by this peer:
-    for (let ledgerName of this.stats.ledger) {
+    Object.keys(this.stats.ledgers).map(ledgerName => {
+      console.log('considering', ledgerName)
       if (ledgerName.substring(0, 'connectorland.'.length) === 'connectorland.') {
-        for (let peerLedger of this.stats.ledger[ledgerName].routes) {
+        console.log('looking for peerLedgers', ledgerName)
+        for (let peerLedger of this.stats.ledgers[ledgerName].routes) {
           if (peerLedger === testHostname) {
+            console.log('found a route to test', testHostname, ledgerName)
             this.peers[testHostname].prepareTestPayment(ledgerName)
           }
         }
       }
-    }
+    })
+    console.log('done testing payments for', testHostname)
   },
   announceRoute: async function(ledger, curve, peerHostname) {
     await this.ensureReady()

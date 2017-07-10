@@ -1,7 +1,7 @@
 let handlers = {}
 module.exports = async function(url) {
   console.log('handling fetch!', url.split('?'), Object.keys(handlers))
-  let ret = await handlers[url.split('?')[0]](url)
+  let ret = await (handlers[url.split('?')[0]] || (() => Promise.resolve()))(url)
   console.log('waited for ret', ret)
   return { json: () => ret }
 }
@@ -33,7 +33,7 @@ module.exports.request = function(options, callback) {
       bodyStr += str
     },
     end() {
-      handlers[url.split('?')[0]](bodyStr).then(response => {
+      (handlers[url.split('?')[0]] || (() => Promise.resolve()))(bodyStr).then(response => {
         dataCb(response)
         endCb()
       })

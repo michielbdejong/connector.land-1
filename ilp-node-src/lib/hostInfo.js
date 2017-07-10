@@ -39,6 +39,14 @@ module.exports = async function getHostInfo(hostname, previousObj, fetch) {
     obj.version = data.properties['https://interledger.org/rel/protocolVersion']
     obj.pubKey = data.properties['https://interledger.org/rel/publicKey']
     obj.title = data.properties['https://interledger.org/rel/title']
+    if (Array.isArray(data.links)) {
+      data.links.map(link => {
+        console.log('SEEING LINK!', data.lin)
+        if (link.rel === 'https://interledger.org/rel/peersRpcUri') {
+          obj.peersRpcUri = link.href
+        }
+      })
+    }
     // support ilp-kit version 2:
     if (typeof obj.title !== 'string') {
       console.log('no title!', data, 'trying', `${protocol}://${hostname}/api/config`)

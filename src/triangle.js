@@ -30,3 +30,5 @@ node2.peerWith('asdf1.com')
 
 node3.peerWith('asdf1.com')
 node3.peerWith('asdf2.com')
+
+setTimeout(() => 0, 1000)
