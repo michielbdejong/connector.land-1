@@ -17,8 +17,8 @@ function Peer(uri, tokenStore, hopper, peerPublicKey, fetch, actAsConnector) {
   const uriParts = uri.split('://')[1].split('/')
   const hostParts = uriParts.shift().split(':')
   this.path = '/' + uriParts.join('/')
-  this.host = hostParts[0]
-  this.testLedger = 'g.dns.' + this.host.split('.').reverse().join('.')
+  this.peerHost = hostParts[0]
+  this.testLedger = 'g.dns.' + this.peerHost.split('.').reverse().join('.')
   if (hostParts.length > 1) {
     this.port = hostParts[1]
   }
@@ -49,7 +49,7 @@ Peer.prototype.postToPeer = async function(method, postData, topLevel = false) {
   // if topLevel is false, the postData is embedded in a 'custom' field of a bigger
   // object, otherwise it's not.
   const options = {
-    host: this.host,
+    host: this.peerHost,
     port: this.port,
     path: this.path + `?method=${method}&prefix=${this.ledger}`,
     method: 'POST',
@@ -162,20 +162,20 @@ Peer.prototype.pay = async function(amountStr, condition, timeout, packet) {
 
 Peer.prototype.getLimit = function() {
   return this.postToPeer('get_limit').then(limit => {
-    // console.log('GOT LIMIT!', limit, this.host)
+    // console.log('GOT LIMIT!', limit, this.peerHost)
     return limit
   })
 }
 
 Peer.prototype.getBalance = function() {
   return this.postToPeer('get_balance').then(balance => {
-    // console.log('GOT BALANCE!', balance, this.host)
+    // console.log('GOT BALANCE!', balance, this.peerHost)
     return balance
   })
 }
 
 Peer.prototype.announceRoute = async function(ledger, curve) {
-  // console.log('ANNOUNCING ROUTE!', this.host, this.ledger, ledger, curve)
+  // console.log('ANNOUNCING ROUTE!', this.peerHost, this.ledger, ledger, curve)
   await this.postToPeer('send_request', {
     method: 'broadcast_routes',
     data: {
@@ -199,11 +199,12 @@ Peer.prototype.announceTestRoute = async function() {
     return
   }
   this.testRouteAnnounced = true
+  console.log('I am', this.hopper.ilpNodeObj.hostname, 'test route announcing now to ', this.peerHost)
   return this.announceRoute(this.testLedger, IDENTITY_CURVE)
 }
 
 Peer.prototype.handleRpc = async function(params, bodyObj) {
-  // console.log('incoming rpc', this.host, params, bodyObj)
+  // console.log('incoming rpc', this.peerHost, params, bodyObj)
   switch(params.method) {
   case 'get_limit':
   case 'get_balance':
@@ -226,8 +227,8 @@ Peer.prototype.handleRpc = async function(params, bodyObj) {
       case 'broadcast_routes':
         console.log('It is routes IN!', params, bodyObj)
         bodyObj[0].custom.data.new_routes.map(route => {
-          console.log('adding the route; I am', this.hopper.ilpNodeObj.hostname, this.actAsConnector, 'the announcing peer is ', this.host, 'the route is for', route.destination_ledger)
-          this.hopper.table.addRoute(this.host, route, this.actAsConnector)
+          console.log('adding the route; I am', this.hopper.ilpNodeObj.hostname, this.actAsConnector, 'the announcing peer is ', this.peerHost, 'the route is for', route.destination_ledger)
+          this.hopper.table.addRoute(this.peerHost, route, this.actAsConnector)
           if (route.destination_ledger = this.testLedger) {
             console.log('loop found!')
             this.prepareTestPayment()
@@ -235,13 +236,12 @@ Peer.prototype.handleRpc = async function(params, bodyObj) {
         })
         // console.log('new routes map', Object.keys(this.hopper.table))
         if (!this.actAsConnector) { // We are connectorland, send a test route:
-          console.log(this.host, 'not acting as a connector, so announcing a test route')
+          console.log(this.hopper.ilpNodeObj.hostname, 'not acting as a connector, so announcing a test route to ', this.peerHost)
           await this.announceTestRoute()
-          console.log('test route announced!', this.host)
         }
         break
       case 'quote_request':
-        const curve = this.hopper.makeCurve(this.host, bodyObj[0].custom.data.destination_ledger)
+        const curve = this.hopper.makeCurve(this.peerHost, bodyObj[0].custom.data.destination_ledger)
         if (curve === undefined) {
           // todo: implement remote quoting
         } else {

@@ -188,7 +188,9 @@ IlpNode.prototype = {
     this.stats.hosts[hash(testHostname)].balance = await this.peers[testHostname].getBalance()
     // console.log('FOUND BALANCE!', testHostname, this.stats.hosts[hash(testHostname)].balance)
     // console.log('announcing test route to', testHostname)
-    await this.peers[testHostname].announceTestRoute()
+    if (!this.actAsConnector) {
+      await this.peers[testHostname].announceTestRoute()
+    }
     setTimeout(() => {
       // console.log('route announced, now let\'s see if a payment works!', Object.keys(this.stats.ledgers))
       // prepare a test payment to each ledger that was announced by this peer:
