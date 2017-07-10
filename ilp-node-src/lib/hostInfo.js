@@ -1,5 +1,3 @@
-const fetch = require('node-fetch')
-
 function rollingAvg(existing, measured) {
   if (typeof existing === 'undefined') {
     return measured
@@ -7,7 +5,7 @@ function rollingAvg(existing, measured) {
   return (existing * 99999 + measured) / 100000
 }
 
-module.exports = async function getHostInfo(hostname, previousObj) {
+module.exports = async function getHostInfo(hostname, previousObj, fetch) {
   const obj = {}
   try {
     let protocol = 'https'

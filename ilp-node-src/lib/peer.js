@@ -2,11 +2,6 @@ const IDENTITY_CURVE = 'AAAAAAAAAAAAAAAAAAAAAP////////////////////8=' //  Buffer
                                                                       // [ [ '0', '0' ], [ '18446744073709551615', '18446744073709551615' ] ]
 const MIN_MESSAGE_WINDOW = 10000
 
-const protocols = {
-  http: require('http'),
-  https: require('https')
-}
-
 const Oer = require('oer-utils')
 const uuid = require('uuid/v4')
 const crypto = require('crypto');
@@ -16,15 +11,15 @@ const sha256 = (secret) => {
       .digest('base64')
 }
 
-function Peer(host, tokenStore, hopper, peerPublicKey) {
+function Peer(host, tokenStore, hopper, peerPublicKey, fetch) {
   console.log('Peer', host, tokenStore, hopper, peerPublicKey)
-  this.host = host
-  this.rate = 1.0 // for now, all peers are in USD
-  this.protocol = protocols['https']
-  if (host.split(':')[0] === 'localhost') {
-    this.protocol = protocols['http'];
-    [ this.host, this.port ] = host.split(':')
+  const hostParts = host.split(':')
+  this.host = hostParts[0]
+  if (hostParts.length > 1) {
+    this.port = hostParts[1]
   }
+  this.rate = 1.0 // for now, all peers are in USD
+  this.fetch = fetch
   this.quoteId = 0
   this.peerPublicKey = peerPublicKey
   console.log('getting token', peerPublicKey)
@@ -56,7 +51,7 @@ Peer.prototype.postToPeer = async function(method, postData) {
     }
   }
   return await new Promise((resolve, reject) => {
-    const req = this.protocol.request(options, (res) => {
+    const req = this.fetch.request(options, (res) => {
       res.setEncoding('utf8')
       var str = ''
       res.on('data', (chunk) => {

@@ -5,6 +5,8 @@ const handleWebFinger = require('./lib/webfinger')
 const Peer = require('./lib/peer').Peer
 const Hopper = require('./lib/hopper').Hopper
 const crypto = require('crypto')
+const realFetch = require('node-fetch')
+
 
 function hash(hostname) {
   return crypto
@@ -13,13 +15,17 @@ function hash(hostname) {
       .digest('hex')
 }
 
-function IlpNode (redisUrl, hostname) {
+function IlpNode (redisUrl, hostname, simulator) {
   console.log('function IlpNode (', { redisUrl, hostname })
   this.client = redis.createClient({ url: redisUrl })
   this.client.on('error', function (err) {
       console.log('Error ' + err)
   })
-
+  if (simulator) {
+    this.fetch = simulator
+  } else {
+    this.fetch = realFetch
+  }
   this.hopper = new Hopper()
   this.hostname = hostname
   this.stats = {
@@ -136,10 +142,18 @@ IlpNode.prototype = {
     await this.ensureReady()
     console.log(this.creds, this.stats)
     this.creds.hosts[hash(peerHostname)] = { hostname: peerHostname }
-    this.stats.hosts[hash(peerHostname)] = await getHostInfo(peerHostname, this.previousStats.hosts[peerHostname] || {})
+    this.stats.hosts[hash(peerHostname)] = await getHostInfo(peerHostname, this.previousStats.hosts[peerHostname] || {}, this.fetch)
     if (this.stats.hosts[hash(peerHostname)].pubKey && !this.peers[peerHostname]) {
       console.log('peering!', peerHostname)
-      this.peers[peerHostname] = new Peer(peerHostname, this.tokenStore, this.hopper, this.stats.hosts[hash(peerHostname)].pubKey)
+      let fetch
+      if (this.fetch) {
+        fetch = this.fetch
+      } else if (peerHostname.split(':')[0] === 'localhost') {
+        fetch = require('http') // TODO: check if fetch.request exists, and if not, rewrite this code to use node-fetch
+      } else {
+        fetch = require('node-fetch')
+      }
+      this.peers[peerHostname] = new Peer(peerHostname, this.tokenStore, this.hopper, this.stats.hosts[hash(peerHostname)].pubKey, fetch)
       await this.testPeer(peerHostname)
     }
     this.creds.ledgers[this.peers[peerHostname].ledger] = { hostname: peerHostname }
