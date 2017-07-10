@@ -173,7 +173,7 @@ Peer.prototype.handleRpc = async function(params, bodyObj) {
       this.getOtherPeer(bestHop.nextLedger).sendTransfer({
         amount: bestHop.sourceAmount,
         expiresAt: bodyObj.expiresAt - 1,
-        condition: bodyObj.condition, 
+        condition: bodyObj.condition,
         ilp: bodyObj.ilp
       }, this.ledger) // reference for relaying back fulfillment
     } else {
