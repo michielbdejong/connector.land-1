@@ -15,7 +15,7 @@ function hash(hostname) {
 }
 
 function IlpNode (kv, hostname, simulator, actAsConnector = false) {
-  console.log('IlpNode constructor', hostname)
+  console.log('IlpNode constructor', hostname, actAsConnector)
   this.kv = kv
   this.actAsConnector = actAsConnector
   if (simulator) {
@@ -35,7 +35,7 @@ function IlpNode (kv, hostname, simulator, actAsConnector = false) {
     routes: {}
   }
   this.peers = {}
-  console.log('instantiating hopper!')
+  // console.log('instantiating hopper!')
   this.hopper = new Hopper(this)
   this.creds = {
     hosts: {},  // map hostname hashes back to hostname preimages
@@ -49,15 +49,15 @@ function IlpNode (kv, hostname, simulator, actAsConnector = false) {
 IlpNode.prototype = {
   ensureReady: async function() {
     if (this.ready === false) {
-      console.log('triggering init')
+      // console.log('triggering init')
       this.ready = await this.init()
-      console.log('init completed by us')
+      // console.log('init completed by us')
       this.ready = true
     }
     if (this.ready !== true) {
-      console.log('init already triggered')
+      // console.log('init already triggered')
       await this.ready
-      console.log('init completed by other')
+      // console.log('init completed by other')
     }
   },
   
@@ -69,7 +69,7 @@ IlpNode.prototype = {
     this.stats.ledgers = {}
     this.lastLedgerStatsCollectionTime = new Date().getTime()
     for (let peerHost in this.peers) {
-      console.log(this.stats, '1')
+      // console.log(this.stats, '1')
       const peerTitle = this.stats.hosts[hash(peerHost)].title
       for (let dest in this.peers[peerHost].routes) {
         if (typeof this.stats.ledgers[dest] === 'undefined') {
@@ -94,7 +94,7 @@ IlpNode.prototype = {
       })
     }).then(reply => {
       if (reply !== null) {
-        console.log('reply!', reply)
+        // console.log('reply!', reply)
         this[key] = JSON.parse(reply)
       }
     })
@@ -114,16 +114,16 @@ IlpNode.prototype = {
     await this.load('stats')
     await this.load('creds')
     if (this.creds.keypair === undefined) {
-      console.log('generating keypair')
+      // console.log('generating keypair')
       this.creds.keypair = keypair.generate()
-      console.log(this.creds.keypair)
+      // console.log(this.creds.keypair)
       await this.save('creds')
-      console.log('saved')
+      // console.log('saved')
     }
     this.tokenStore = new keypair.TokenStore(this.creds.keypair)
   },
   testAll: async function() {
-    console.log('testAll!!!!testAll!!!!testAll!!!!testAll!!!!')
+    // console.log('testAll!!!!testAll!!!!testAll!!!!testAll!!!!')
     const promises = []
     await this.ensureReady()
     this.previousStats = this.stats || { hosts: {}, ledger: {}, routes: {} } // for use in running averages
@@ -132,7 +132,7 @@ IlpNode.prototype = {
       ledgers: {},
       routes: {}
     }
-    console.log('in testAll!', this.creds)
+    // console.log('in testAll!', this.creds)
     for (let hostnameHash of Object.keys(this.creds.hosts)) {
       promises.push(this.testHost(this.creds.hosts[hostnameHash].hostname, false))
       // this fills up the 'hosts' portion of the stats, by calling both testHost and testPeer
@@ -145,13 +145,13 @@ IlpNode.prototype = {
     await this.save('creds')
   },
   peerWith: async function(peerHostname) {
-    console.log(this.hostname, 'peers with', peerHostname)
+    // console.log(this.hostname, 'peers with', peerHostname)
     await this.ensureReady()
-    console.log(this.creds, this.stats, this.previousStats, '2')
+    // console.log(this.creds, this.stats, this.previousStats, '2')
     this.creds.hosts[hash(peerHostname)] = { hostname: peerHostname }
     this.stats.hosts[hash(peerHostname)] = await getHostInfo(peerHostname, this.previousStats.hosts[peerHostname] || {}, this.fetch)
     if (this.stats.hosts[hash(peerHostname)].pubKey && !this.peers[peerHostname]) {
-      console.log('peering!', peerHostname)
+      // console.log('peering!', peerHostname)
       let fetch
       if (this.fetch) {
         fetch = this.fetch
@@ -160,17 +160,17 @@ IlpNode.prototype = {
       } else {
         fetch = require('node-fetch')
       }
-      console.log('INSTANTIATING PEER!', this.stats.hosts[hash(peerHostname)])
+      console.log('INSTANTIATING PEER!', peerHostname, 'should I act as a connector?', this.hostname, this.actAsConnector)
       this.peers[peerHostname] = new Peer(this.stats.hosts[hash(peerHostname)].peersRpcUri, this.tokenStore, this.hopper, this.stats.hosts[hash(peerHostname)].pubKey, fetch, this.actAsConnector)
     }
     this.creds.ledgers[this.peers[peerHostname].ledger] = { hostname: peerHostname }
-    console.log('linked', this.peers[peerHostname].ledger, peerHostname)
+    // console.log('linked', this.peers[peerHostname].ledger, peerHostname)
     await this.save('creds')
     await new Promise(resolve => {
       setTimeout(resolve, 100) // wait for peer to also add trustline in triangle set up
       //TODO: avoid needing this by checking if a route broadcast failed, and repeating it in that case
     })
-    console.log('peer was added, testing it now', this.creds.ledgers, this.hostname, peerHostname, this.peers[peerHostname].ledger, this.peers[peerHostname].myPublicKey, this.peers[peerHostname].peerPublicKey)
+    // console.log('peer was added, testing it now', this.creds.ledgers, this.hostname, peerHostname, this.peers[peerHostname].ledger, this.peers[peerHostname].myPublicKey, this.peers[peerHostname].peerPublicKey)
     await this.testPeer(peerHostname)
   },
   testHost: async function(testHostname, writeStats = true) {
@@ -181,21 +181,22 @@ IlpNode.prototype = {
     }
   },
   testPeer: async function(testHostname) {
-    console.log('testing the peer!', testHostname)
+    // console.log('testing the peer!', testHostname)
     await this.ensureReady()
     this.stats.hosts[hash(testHostname)].limit = await this.peers[testHostname].getLimit()
-    console.log('FOUND LIMIT!', testHostname, this.stats.hosts[hash(testHostname)].limit)
+    // console.log('FOUND LIMIT!', testHostname, this.stats.hosts[hash(testHostname)].limit)
     this.stats.hosts[hash(testHostname)].balance = await this.peers[testHostname].getBalance()
-    console.log('FOUND BALANCE!', testHostname, this.stats.hosts[hash(testHostname)].balance)
-    console.log('announcing test route to', testHostname)
+    // console.log('FOUND BALANCE!', testHostname, this.stats.hosts[hash(testHostname)].balance)
+    // console.log('announcing test route to', testHostname)
     await this.peers[testHostname].announceTestRoute()
     setTimeout(() => {
-      console.log('route announced, now let\'s see if a payment works!', Object.keys(this.stats.ledgers))
+      // console.log('route announced, now let\'s see if a payment works!', Object.keys(this.stats.ledgers))
       // prepare a test payment to each ledger that was announced by this peer:
       Object.keys(this.stats.ledgers).map(ledgerName => {
-        console.log('considering', ledgerName)
-        if (ledgerName.substring(0, 'connectorland.'.length) === 'connectorland.') {
-          console.log('looking for peerLedgers', ledgerName)
+        let testLedger = 'g.dns.' + this.hostname.split('.').reverse().join('.')
+        console.log('testLedger', testLedger)
+        if (ledgerName.substring(0, testLedger.length) === testLedger) {
+          // console.log('looking for peerLedgers', ledgerName)
           for (let peerLedger of this.stats.ledgers[ledgerName].routes) {
             if (peerLedger === testHostname) {
               console.log('found a route to test', testHostname, ledgerName)
@@ -204,7 +205,7 @@ IlpNode.prototype = {
           }
         }
       })
-      console.log('done testing payments for', testHostname)
+      // console.log('done testing payments for', testHostname)
     }, 100)
   },
   announceRoute: async function(ledger, curve, peerHostname) {
@@ -216,19 +217,19 @@ IlpNode.prototype = {
     return handleWebFinger(resource, this.creds, this.hostname)
   },
   handleRpc: async function(params, body) {
-    console.log('handleRpc 1', params, body)
+    // console.log('handleRpc 1', params, body)
     await this.ensureReady()
-    console.log('handleRpc 2')
+    // console.log('handleRpc 2')
     if (!this.creds.ledgers[params.prefix]) {
-      console.log('peer not found!', this.creds.ledgers, params, JSON.stringify(this.creds.ledgers))
+      // console.log('peer not found!', this.creds.ledgers, params, JSON.stringify(this.creds.ledgers))
       return 'error please retry'
     }
-    console.log('handleRpc 3')
+    // console.log('handleRpc 3')
     if (typeof this.creds.ledgers[params.prefix] === 'undefined') {
       return 'unknown ledger ' + params.prefix
     }
     const peerHostname = this.creds.ledgers[params.prefix].hostname
-    console.log('handle rpc 4', params, body, peerHostname, JSON.stringify(Object.keys(this.peers)), 'are the peer keys')
+    // console.log('handle rpc 4', params, body, peerHostname, JSON.stringify(Object.keys(this.peers)), 'are the peer keys')
     return this.peers[peerHostname].handleRpc(params, body)
   },
 }

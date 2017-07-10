@@ -12,7 +12,8 @@ const sha256 = (secret) => {
 }
 
 function Peer(uri, tokenStore, hopper, peerPublicKey, fetch, actAsConnector) {
-  console.log('Peer', uri, tokenStore, hopper, peerPublicKey)
+  this.testRouteAnnounced = false
+  // console.log('Peer', uri, tokenStore, hopper, peerPublicKey)
   const uriParts = uri.split('://')[1].split('/')
   const hostParts = uriParts.shift().split(':')
   this.path = '/' + uriParts.join('/')
@@ -25,13 +26,13 @@ function Peer(uri, tokenStore, hopper, peerPublicKey, fetch, actAsConnector) {
   this.fetch = fetch
   this.quoteId = 0
   this.peerPublicKey = peerPublicKey
-  console.log('getting token', peerPublicKey)
+  // console.log('getting token', peerPublicKey)
   this.ledger = 'peer.' + tokenStore.getToken('token', peerPublicKey).substring(0, 5) + '.usd.9.';
   this.authToken = tokenStore.getToken('authorization', peerPublicKey)
   this.myPublicKey = tokenStore.peeringKeyPair.pub
   this.routes = {}
   this.hopper = hopper
-  console.log('hopper set, constructor done!')
+  // console.log('hopper set, constructor done!')
 }
 
 Peer.prototype.newQuoteId = function () {
@@ -56,14 +57,14 @@ Peer.prototype.postToPeer = async function(method, postData) {
   }
   return await new Promise((resolve, reject) => {
     const req = this.fetch.request(options, (res) => {
-      console.log('fetch request resulted in', res)
+      // console.log('fetch request resulted in', res)
       res.setEncoding('utf8')
       var str = ''
       res.on('data', (chunk) => {
         str += chunk
       })
       res.on('end', () => {
-        console.log('rpc response!', postData, str)
+        // console.log('rpc response!', postData, str)
         resolve(str)
       })
     })
@@ -154,20 +155,20 @@ Peer.prototype.pay = function(amountStr, condition, timeout, packet) {
 
 Peer.prototype.getLimit = function() {
   return this.postToPeer('get_limit').then(limit => {
-    console.log('GOT LIMIT!', limit, this.host)
+    // console.log('GOT LIMIT!', limit, this.host)
     return limit
   })
 }
 
 Peer.prototype.getBalance = function() {
   return this.postToPeer('get_balance').then(balance => {
-    console.log('GOT BALANCE!', balance, this.host)
+    // console.log('GOT BALANCE!', balance, this.host)
     return balance
   })
 }
 
 Peer.prototype.announceRoute = async function(ledger, curve) {
-  console.log('ANNOUNCING ROUTE!', this.host, this.ledger, ledger, curve)
+  // console.log('ANNOUNCING ROUTE!', this.host, this.ledger, ledger, curve)
   await this.postToPeer('send_request', {
     method: 'broadcast_routes',
     data: {
@@ -183,15 +184,20 @@ Peer.prototype.announceRoute = async function(ledger, curve) {
       unreachable_through_me: []
     }
   })
-  console.log('route announced, nice!')
+  // console.log('route announced, nice!')
 }
 
 Peer.prototype.announceTestRoute = async function() {
-  return this.announceRoute(`connectorland.${this.peerPublicKey}`, IDENTITY_CURVE)
+  if (this.testRouteAnnounced) {
+    return
+  }
+  this.testRouteAnnounced = true
+  let testLedger = 'g.dns.' + this.host.split('.').reverse().join('.')
+  return this.announceRoute(testLedger, IDENTITY_CURVE)
 }
 
 Peer.prototype.handleRpc = async function(params, bodyObj) {
-  console.log('incoming rpc', this.host, params, bodyObj)
+  // console.log('incoming rpc', this.host, params, bodyObj)
   switch(params.method) {
   case 'get_limit':
   case 'get_balance':
@@ -204,7 +210,7 @@ Peer.prototype.handleRpc = async function(params, bodyObj) {
     break;
   case 'send_request':
   case 'send_message':
-    console.log('GOT MESSAGE!!', params, bodyObj);
+    // console.log('GOT MESSAGE!!', params, bodyObj);
     // reverse engineered from https://github.com/interledgerjs/ilp-plugin-virtual/blob/v15.0.1/src/lib/plugin.js#L152:
     if (Array.isArray(bodyObj) && bodyObj[0].data) {
       bodyObj[0].custom = bodyObj[0].data
@@ -212,12 +218,14 @@ Peer.prototype.handleRpc = async function(params, bodyObj) {
     if (Array.isArray(bodyObj) && bodyObj[0].custom) {
       switch(bodyObj[0].custom.method) {
       case 'broadcast_routes':
-        console.log('It is routes IN!', params, JSON.stringify(bodyObj, null, 2))
+        console.log('It is routes IN!', params, bodyObj)
         bodyObj[0].custom.data.new_routes.map(route => {
+          console.log('adding the route; I am', this.hopper.ilpNodeObj.hostname, this.actAsConnector, 'the announcing peer is ', this.host, 'the route is for', route.destination_ledger)
           this.hopper.table.addRoute(this.host, route, this.actAsConnector)
         })
-        console.log('new routes map', Object.keys(this.hopper.table))
+        // console.log('new routes map', Object.keys(this.hopper.table))
         if (!this.actAsConnector) { // We are connectorland, send a test route:
+          console.log(this.host, 'not acting as a connector, so announcing a test route')
           await this.announceTestRoute()
           console.log('test route announced!', this.host)
         }

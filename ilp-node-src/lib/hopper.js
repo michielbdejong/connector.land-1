@@ -5,7 +5,7 @@ const Oer = require('oer-utils')
 function Hopper(ilpNodeObj) {
   this.ilpNodeObj = ilpNodeObj
   if (!this.ilpNodeObj) {
-    console.log('panic 3')
+    console.error('panic 3')
   }
   this.table = new Table(this.ilpNodeObj)
 }
@@ -32,7 +32,7 @@ Hopper.prototype.forward = function(bodyObj) {
   }
   // 3) ensure condition = nextCondition, and forward the payment:
   if (!this.ilpNodeObj) {
-    console.log('panic 1')
+    console.error('panic 1')
   }
   return this.ilpNodeObj.peers[bestHop.nextHost].pay(bestHop.nextAmount, bodyObj.condition, nextExpiry, bodyObj.ilp)
 }
@@ -90,23 +90,23 @@ Table.prototype = {
     }
   },
   addRoute(peerHost, routeObj, andBroadcast = false) {
-    console.log('addRoute', peerHost, routeObj, andBroadcast)
+    console.log('addRoute', peerHost, routeObj.destination_ledger, andBroadcast)
  
     const subTable = this.findSubTable(routeObj.destination_ledger.split('.'))
-    console.log('subTable found', subTable, peerHost)
+    // console.log('subTable found', subTable, peerHost)
     subTable.routes[peerHost] = routeObj
   if (!this.ilpNodeObj) {
     console.log('panic 2')
   }
-    console.log('subTable updated', subTable, this.ilpNodeObj.peers)
+    // console.log('subTable updated', subTable, this.ilpNodeObj.peers)
     if (andBroadcast) {
-      console.log('broadcast forward!', Object.keys(this.ilpNodeObj.peers))
+      // console.log('broadcast forward!', Object.keys(this.ilpNodeObj.peers))
       Object.keys(this.ilpNodeObj.peers).map(otherPeer => {
-        console.log('forwarding broadcast from-to', peerHost, otherPeer)
         if (otherPeer !== peerHost) {
-  if (!this.ilpNodeObj) {
-    console.log('panic 4')
-  }
+          console.log('forwarding broadcast from-to', peerHost, otherPeer)
+          if (!this.ilpNodeObj) {
+            console.log('panic 4')
+          }
           this.ilpNodeObj.peers[otherPeer].announceRoute(routeObj.destination_ledger, routeObj.curve) // TODO: apply own rate
         }
       })

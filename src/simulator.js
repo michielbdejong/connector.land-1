@@ -34,17 +34,17 @@ module.exports.request = function(options, callback) {
     },
     end() {
       if (typeof handlers[url.split('?')[0]] === 'undefined') {
-        console.log('searching handler', url.split('?')[0], Object.keys(handlers))
+        console.error('searching handler', url.split('?')[0], Object.keys(handlers))
       }
       let params = {}
       let pairs = url.split('?')[1].split('&')
       pairs.map(pair => {
         params[pair.split('=')[0]] = pair.split('=')[1]
       })
-      console.log('RPC PARAMS', params, typeof handlers[url.split('?')[0]], bodyStr)
+      // console.log('RPC PARAMS', params, typeof handlers[url.split('?')[0]], bodyStr)
       try {
         (handlers[url.split('?')[0]] || (() => Promise.resolve()))(params, bodyStr).then(response => {
-          console.log('in simulator response handler!', response)
+          // console.log('in simulator response handler!', response)
           dataCb(response)
           endCb()
         })
