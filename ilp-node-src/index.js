@@ -123,7 +123,11 @@ IlpNode.prototype = {
     }
     for (let hostnameHash of Object.keys(this.creds.hosts)) {
       promises.push(this.testHost(this.creds.hosts[hostnameHash].hostname, false))
+      // this fills up the 'hosts' portion of the stats, by calling both testHost and testPeer
+      // the 'ledgers' portion is filled up by incoming route broadcasts
+      // testPeer then looks at ledgers that are reachable from this peer and tries to send to them
     }
+
     await Promise.all(promises)
     await this.save('stats')
     await this.save('creds')
@@ -157,6 +161,16 @@ IlpNode.prototype = {
     console.log('FOUND BALANCE!', testHostname, this.stats.hosts[hash(testHostname)].balance)
     console.log('announcing test route to', testHostname)
     await this.peers[testHostname].announceTestRoute()
+    // prepare a test payment to each ledger that was announced by this peer:
+    for (let ledgerName of this.stats.ledger) {
+      if (ledgerName.substring(0, 'connectorland.'.length) === 'connectorland.') {
+        for (let peerLedger of this.stats.ledger[ledgerName].routes) {
+          if (peerLedger === testHostname) {
+            this.peers[testHostname].prepareTestPayment(ledgerName)
+          }
+        }
+      }
+    }
   },
   announceRoute: async function(ledger, curve, peerHostname) {
     await this.ensureReady()
