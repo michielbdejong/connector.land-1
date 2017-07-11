@@ -57,7 +57,7 @@ Hopper.prototype = {
     if (Array.isArray(bodyObj) && this.paymentsInitiatedById[bodyObj[0]]) { // check if we were the sender
       if (method === 'fulfill_condition') {
         if (bodyObj[1] === this.paymentsInitiatedById[bodyObj[0]]) {
-          console.log('TEST PAYMENT WAS SUCCESSFUL!')
+          // console.log('TEST PAYMENT WAS SUCCESSFUL!')
         } else {
           console.log('TEST PAYMENT FULFILLMENT WRONG!', bodyObj, this.paymentsInitiatedById)
         }
@@ -169,7 +169,7 @@ Table.prototype = {
     const destAmountLowBits = reader2.readUInt32()
     const destAccount = reader2.readVarOctetString().toString('ascii')
     if (destAccount.startsWith(this.ilpNodeObj.testLedger)) {
-      console.log('best hop is local!', destAccount)
+      // console.log('best hop is local!', destAccount)
       return {
         isLocal: true,
         destAmountHighBits,
@@ -181,7 +181,7 @@ Table.prototype = {
     let bestHost
     let bestDistance
     let bestPrice
-    console.log('comparing various hops', Object.keys(subTable.routes))
+    // console.log('comparing various hops', Object.keys(subTable.routes))
     for (let peerHost in subTable.routes) {
       let thisDistance = calcDistance(subTable.routes[peerHost])
       if (bestHost && bestDistance < thisDistance) {

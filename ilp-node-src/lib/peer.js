@@ -139,9 +139,9 @@ Peer.prototype = {
         case 'broadcast_routes':
           bodyObj[0].custom.data.new_routes.map(route => {
             this.hopper.table.addRoute(this.peerHost, route, this.actAsConnector)
-            if (route.destination_ledger = this.testLedger && !this.actAsConnector) {
-              this.prepareTestPayment()
-            } 
+            // if (route.destination_ledger = this.testLedger && !this.actAsConnector) {
+            //   this.prepareTestPayment()
+            // } 
           })
           break
         default:

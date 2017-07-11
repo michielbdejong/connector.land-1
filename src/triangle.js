@@ -55,4 +55,15 @@ node2.peerWith('asdf1.com')
 node3.peerWith('asdf1.com')
 node3.peerWith('asdf2.com')
 
-setTimeout(() => 0, 1000)
+setTimeout(() => {
+  const stressTestStartTime = new Date().getTime()
+  let promises = []
+  const batchSize = 10000
+  for (let i = 0; i < batchSize; i++) {
+    promises.push(node1.peers['asdf3.com'].prepareTestPayment('g.dns.com.asdf1.'))
+  }
+  Promise.all(promises).then(() => {
+    const endTime = new Date().getTime()
+    console.log('stress test took', endTime - stressTestStartTime, { batchSize }, 'that means req/ms', 6* batchSize / (endTime - stressTestStartTime), 'because each transfer is 6 simulated RPC calls')
+  })
+}, 500)
