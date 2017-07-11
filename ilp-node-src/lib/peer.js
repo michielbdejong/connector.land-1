@@ -29,8 +29,9 @@ Peer.prototype = {
         Authorization: 'Bearer ' + this.authToken
       }, body: JSON.stringify(postData, null, 2)
     }).then(res => {
-      console.log('post response!', method, res)
-      return res.json()
+      let ret = res.json()
+      console.log('post response!', method, ret)
+      return ret
     })
   },
     /////////////////////
