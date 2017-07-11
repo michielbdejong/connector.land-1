@@ -12,13 +12,11 @@ const sha256 = (secret) => {
 }
 
 function Peer(uri, tokenStore, hopper, peerPublicKey, fetch, actAsConnector) {
-  this.testRouteAnnounced = false
   // console.log('Peer', uri, tokenStore, hopper, peerPublicKey)
   const uriParts = uri.split('://')[1].split('/')
   const hostParts = uriParts.shift().split(':')
   this.path = '/' + uriParts.join('/')
   this.peerHost = hostParts[0]
-  this.testLedger = 'g.dns.' + this.peerHost.split('.').reverse().join('.')
   if (hostParts.length > 1) {
     this.port = hostParts[1]
   }
@@ -33,6 +31,8 @@ function Peer(uri, tokenStore, hopper, peerPublicKey, fetch, actAsConnector) {
   this.myPublicKey = tokenStore.peeringKeyPair.pub
   this.routes = {}
   this.hopper = hopper
+  this.testLedger = 'g.dns.' + this.hopper.ilpNodeObj.hostname.split('.').reverse().join('.') + '.'
+  this.testRouteAnnounced = false
   // console.log('hopper set, constructor done!')
 }
 
@@ -236,8 +236,9 @@ Peer.prototype.handleRpc = async function(params, bodyObj) {
         })
         // console.log('new routes map', Object.keys(this.hopper.table))
         if (!this.actAsConnector) { // We are connectorland, send a test route:
-          console.log(this.hopper.ilpNodeObj.hostname, 'not acting as a connector, so announcing a test route to ', this.peerHost)
-          await this.announceTestRoute()
+          // disabling this because we only want the test routes that are created from peerWith, not these reactive ones
+          // console.log(this.hopper.ilpNodeObj.hostname, 'not acting as a connector, so announcing a test route to ', this.peerHost)
+          // await this.announceTestRoute()
         }
         break
       case 'quote_request':

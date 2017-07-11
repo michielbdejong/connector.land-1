@@ -8,7 +8,7 @@ function Hopper(ilpNodeObj) {
   if (!this.ilpNodeObj) {
     console.error('panic 3')
   }
-  this.table = new Table(this.ilpNodeObj)
+  this.table = new Table(this.ilpNodeObj, '')
 }
 
 // this is where the Interledger chaining layer is implemented! Namely, forward a payment if all of:
@@ -82,32 +82,50 @@ function calcPrice(route, sourceAmount, finalAmount) {
   }
 }
 
-function Table(ilpNodeObj) {
+function Table(ilpNodeObj, prefix = '') {
+  this.prefix = prefix
   this.ilpNodeObj = ilpNodeObj
   this.routes = {}
   this.subTables = {}
 }
 
 Table.prototype = {
-  findSubTable(addressParts) {
+  findSubTable(addressParts, orLastAncestor) {
     if (addressParts.length === 1) {
       return this
     } else {
-      if (this.subTables[addressParts[0]] === undefined) {
-        this.subTables[addressParts[0]] = new Table(this.ilpNodeObj)
+      const nextPart = addressParts.shift()
+      if (this.subTables[nextPart] === undefined) {
+        if (orLastAncestor) {
+          return this
+        }
+        this.subTables[nextPart] = new Table(this.ilpNodeObj, this.prefix + nextPart + '.')
       }
-      return this.subTables[addressParts[0]]
+      return this.subTables[nextPart].findSubTable(addressParts, orLastAncestor)
+    }
+  },
+  debugTable() {
+    return {
+      prefix: this.prefix,
+      routes: this.routes,
+      subTables: Object.keys(this.subTables).map(subTableName => { return { subTableName, contents: this.subTables[subTableName].debugTable() } })
     }
   },
   addRoute(peerHost, routeObj, andBroadcast = false) {
     console.log('addRoute', peerHost, routeObj.destination_ledger, andBroadcast)
  
-    const subTable = this.findSubTable(routeObj.destination_ledger.split('.'))
-    // console.log('subTable found', subTable, peerHost)
-    subTable.routes[peerHost] = routeObj
-  if (!this.ilpNodeObj) {
-    console.log('panic 2')
-  }
+    const subTable = this.findSubTable(routeObj.destination_ledger.split('.'), false)
+    console.log('subTable found', subTable.prefix, peerHost)
+    subTable.routes[peerHost] = {
+       destination_ledger: routeObj.destination_ledger, // as a sanity check, only
+       min_message_window: routeObj.min_message_window,
+       points: routeObj.points,
+       paths: routeObj.paths
+    }
+    console.log('after adding, routing tree is', JSON.stringify(this.debugTable(), null, 2))
+    if (!this.ilpNodeObj) {
+      console.log('panic 2')
+    }
     // console.log('subTable updated', subTable, this.ilpNodeObj.peers)
     if (andBroadcast) {
       // console.log('broadcast forward!', Object.keys(this.ilpNodeObj.peers))
@@ -117,14 +135,18 @@ Table.prototype = {
           if (!this.ilpNodeObj) {
             console.log('panic 4')
           }
-          this.ilpNodeObj.peers[otherPeer].announceRoute(routeObj.destination_ledger, routeObj.curve) // TODO: apply own rate
+          this.ilpNodeObj.peers[otherPeer].announceRoute(routeObj.destination_ledger, routeObj.points) // TODO: apply own rate
         }
       })
     }
   },
   removeRoute(targetPrefix, peerHost) {
-    const subTable = this.findSubTable(targetPrefix.split('.'))
-    delete subTable.routes[peerHost]
+    const subTable = this.findSubTable(targetPrefix.split('.'), true)
+    if (subTable.prefix === targetPrefix) {
+      delete subTable.routes[peerHost]
+    } else {
+       console.error('tried to delete route but only found', { peerHost, targetPrefix, lastAncestorFound: subTable.prefix })
+    }
   },
   findBestHop(packet) {
     console.log('findBestHop Buffer.from!', packet)
@@ -140,15 +162,17 @@ Table.prototype = {
     const destAccount = reader2.readVarOctetString().toString('ascii')
     if (destAccount.startsWith(this.ilpNodeObj.testLedger)) {
       return {
+        isLocal: true,
         destAmountHighBits,
         destAmountLowBits,
         destAccount
       }
     }
-    const subTable = this.findSubTable(destAccount)
+    const subTable = this.findSubTable(destAccount.split('.'), true)
     let bestHost
     let bestDistance
     let bestPrice
+    console.log('comparing various hops', Object.keys(this.routes))
     for (let peerHost in this.routes) {
       console.log('considering peer!', peerHost)
       let thisDistance = calcDistance(this.routes[peerHost])
