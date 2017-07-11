@@ -146,17 +146,18 @@ Peer.prototype.prepareTestPayment = async function() {
   writer2.writeUInt8(1) // TYPE_ILP_PAYMENT
   writer2.writeVarOctetString(writer1.getBuffer())
   const ilpPacket = writer2.getBuffer().toString('base64')
+  // Peer.prototype.pay = async function(amountStr, condition, expiresAtMs, packet)
   return this.pay('2', sha256('something secret'), new Date().getTime() + 10000,  ilpPacket)
 }
 
-Peer.prototype.pay = async function(amountStr, condition, timeout, packet) {
+Peer.prototype.pay = async function(amountStr, condition, expiresAtMs, packet) {
+  console.log('sending payment', amountStr, condition, expiresAtMs, packet, this.hopper.ilpNodeObj.hostname, this.peerHost)
   return this.postToPeer('send_transfer', {
-    ilp: packet,
     id: uuid(),
     amount: amountStr,
     ilp: packet,
     executionCondition: condition,
-    expiresAt: new Date(new Date().getTime() + timeout),
+    expiresAt: new Date(expiresAtMs),
   }, true)
 }
 
@@ -199,6 +200,7 @@ Peer.prototype.announceTestRoute = async function() {
     return
   }
   this.testRouteAnnounced = true
+                   // this.hopper.ilpNodeObj.hostname
   console.log('I am', this.hopper.ilpNodeObj.hostname, 'test route announcing now to ', this.peerHost)
   return this.announceRoute(this.testLedger, IDENTITY_CURVE)
 }
@@ -211,6 +213,7 @@ Peer.prototype.handleRpc = async function(params, bodyObj) {
     return '0';
     break;
   case 'send_transfer':
+    console.log('seeing transfer come in!', JSON.stringify(bodyObj, null, 2), { am: this.hopper.ilpNodeObj.hostname, from: this.peerHost })
     const response = this.hopper.forward(bodyObj[0])
     // in a future version of the protocol, this response may be put directly in the http response; for now, it's not:
     this.postToPeer(response.method, response)
@@ -229,8 +232,8 @@ Peer.prototype.handleRpc = async function(params, bodyObj) {
         bodyObj[0].custom.data.new_routes.map(route => {
           console.log('adding the route; I am', this.hopper.ilpNodeObj.hostname, this.actAsConnector, 'the announcing peer is ', this.peerHost, 'the route is for', route.destination_ledger)
           this.hopper.table.addRoute(this.peerHost, route, this.actAsConnector)
-          if (route.destination_ledger = this.testLedger) {
-            console.log('loop found!', this.testLedger, 'sending test payment to it am-to', this.hopper.ilpNodeObj.hostname, this.peerHost)
+          if (route.destination_ledger = this.testLedger && !this.actAsConnector) {
+            console.log('loop found!', this.testLedger, 'sending test payment to it am-to', this.hopper.ilpNodeObj.hostname, this.actAsConnector, this.peerHost)
             this.prepareTestPayment()
           } 
         })

@@ -23,7 +23,7 @@ Hopper.prototype.forward = function(transfer) {
     transfer.reason = 'not enough time'
     return transfer
   }
-  const nextExpiry = new Date(new Date(transfer.expiresAt).getTime() - MIN_MESSAGE_WINDOW)
+  const nextExpiryMs = new Date(transfer.expiresAt).getTime() - MIN_MESSAGE_WINDOW
 
   const bestHop = this.table.findBestHop(transfer.ilp)
   if (bestHop.isLocal) {
@@ -44,7 +44,9 @@ Hopper.prototype.forward = function(transfer) {
     return { method: 'reject_incoming_transfer' }
   }
   console.log('forwarding, pay!', transfer, this.ilpNodeObj.hostname, bestHop)
-  return this.ilpNodeObj.peers[bestHop.nextHost].pay(bestHop.nextAmount, transfer.condition, nextExpiry, transfer.ilp)
+  // Peer.prototype.pay = async function(amountStr, condition, expiresAtMs, packet)
+  console.log('determining', bestHop, transfer, nextExpiryMs)
+  return this.ilpNodeObj.peers[bestHop.nextHost].pay(bestHop.nextAmount, transfer.executionCondition, nextExpiryMs, transfer.ilp)
 }
 
 // The rest of the Hopper class implements routing tables:
@@ -170,7 +172,7 @@ Table.prototype = {
         destAccount
       }
     }
-    console.log('finding best hop from table!', destAccount)
+    console.log('finding best hop from table!', destAccount, this.ilpNodeObj.testLedger)
     const subTable = this.findSubTable(destAccount.split('.'), true)
     let bestHost
     let bestDistance
