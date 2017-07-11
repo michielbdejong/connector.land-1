@@ -90,8 +90,8 @@ Peer.prototype = {
     this.hopper.paymentsInitiatedByCondition[testPaymentCondition] = testPaymentPreimage
     return this.sendTransfer('2', testPaymentCondition, new Date().getTime() + 10000,  ilpPacket, testPaymentId)
   },  
-  getLimit() { return this.postToPeer('get_limit') },
-  getBalance() { return this.postToPeer('get_balance') },
+  getLimit: async function() { return this.postToPeer('get_limit') },
+  getBalance: async function() { return this.postToPeer('get_balance') },
     //////////////
    // INCOMING //
   //////////////
