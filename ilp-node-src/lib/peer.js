@@ -72,17 +72,17 @@ Peer.prototype.postToPeer = async function(method, postData, topLevel = false) {
       })
     })
     req.on('error', reject)
-    let obj = postData
+    let arr = postData
     if (!topLevel) {
-      obj = {
+      arr = [ {
         ledger: this.ledger,
         // work around https://github.com/interledgerjs/ilp-plugin-virtual/issues/74
         from: this.ledger + this.myPublicKey,
         to: this.ledger + this.peerPublicKey,
         custom: postData
-      }
+      } ]
     }
-    req.write(JSON.stringify([ obj ], null, 2))
+    req.write(JSON.stringify(arr, null, 2))
     req.end()
   })
 }
@@ -146,19 +146,26 @@ Peer.prototype.prepareTestPayment = async function() {
   writer2.writeUInt8(1) // TYPE_ILP_PAYMENT
   writer2.writeVarOctetString(writer1.getBuffer())
   const ilpPacket = writer2.getBuffer().toString('base64')
-  // Peer.prototype.pay = async function(amountStr, condition, expiresAtMs, packet)
-  return this.pay('2', sha256('something secret'), new Date().getTime() + 10000,  ilpPacket)
+  // Peer.prototype.pay = async function(amountStr, condition, expiresAtMs, packet, outgoingUuid)
+  return this.pay('2', sha256('something secret'), new Date().getTime() + 10000,  ilpPacket, uuid())
 }
 
-Peer.prototype.pay = async function(amountStr, condition, expiresAtMs, packet) {
+Peer.prototype.pay = async function(amountStr, condition, expiresAtMs, packet, outgoingUuid) {
   console.log('sending payment', amountStr, condition, expiresAtMs, packet, this.hopper.ilpNodeObj.hostname, this.peerHost)
-  return this.postToPeer('send_transfer', {
-    id: uuid(),
+  return this.postToPeer('send_transfer', [ {
+    id: outgoingUuid,
     amount: amountStr,
     ilp: packet,
     executionCondition: condition,
     expiresAt: new Date(expiresAtMs),
-  }, true)
+  } ], true)
+}
+
+Peer.prototype.fulfill = function(incomingUuid, fulfillment) {
+  return this.postToPeer('fulfill_condition', [
+    incomingUuid,
+    fulfillment
+  ], true)
 }
 
 Peer.prototype.getLimit = function() {
@@ -206,7 +213,7 @@ Peer.prototype.announceTestRoute = async function() {
 }
 
 Peer.prototype.handleRpc = async function(params, bodyObj) {
-  // console.log('incoming rpc', this.peerHost, params, bodyObj)
+  console.log('incoming rpc', this.hopper.ilpNodeObj.hostname, this.peerHost, params, bodyObj)
   switch(params.method) {
   case 'get_limit':
   case 'get_balance':
@@ -214,9 +221,10 @@ Peer.prototype.handleRpc = async function(params, bodyObj) {
     break;
   case 'send_transfer':
     console.log('seeing transfer come in!', JSON.stringify(bodyObj, null, 2), { am: this.hopper.ilpNodeObj.hostname, from: this.peerHost })
-    const response = this.hopper.forward(bodyObj[0])
+    const response = await this.hopper.forward(bodyObj[0], this.peerHost)
+    console.log('posting hopper-forward response back!', response, { am: this.hopper.ilpNodeObj.hostname, from: this.peerHost })
     // in a future version of the protocol, this response may be put directly in the http response; for now, it's not:
-    this.postToPeer(response.method, response)
+    this.postToPeer(response.method, response.body, true)
     break;
   case 'send_request':
   case 'send_message':
@@ -254,6 +262,9 @@ Peer.prototype.handleRpc = async function(params, bodyObj) {
         break
       case 'quote_response':
         // todo: calculate gratuity compared to route
+        break;
+      case 'fulfill_condition':
+        this.hopper.fulfill(bodyObj[0])
         break;
       default:
         console.error('Unknown message method', bodyObj[0].custom.method)

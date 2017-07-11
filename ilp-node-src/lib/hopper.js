@@ -2,6 +2,7 @@ const COMMISSION=1.337
 const MIN_MESSAGE_WINDOW = 10000
 
 const Oer = require('oer-utils')
+const uuid = require('uuid/v4')
 
 function Hopper(ilpNodeObj) {
   this.ilpNodeObj = ilpNodeObj
@@ -9,13 +10,14 @@ function Hopper(ilpNodeObj) {
     console.error('panic 3')
   }
   this.table = new Table(this.ilpNodeObj, '')
+  this.pendingFulfill = {}
 }
 
 // this is where the Interledger chaining layer is implemented! Namely, forward a payment if all of:
 // 1) expiry > nextExpiry, so that this connector has time to fulfill
 // 2) amount > exchangeRate(nextAmount), so that this connector makes a bit of money
 // 3) condition = nextCondition, so that if the next payment gets fulfilled, this connector can also fulfill the source payment
-Hopper.prototype.forward = function(transfer) {
+Hopper.prototype.forward = function(transfer, incomingPeerHost) {
   console.log('forwarding!', transfer, this.ilpNodeObj.hostname)
   // 1) expiry > nextExpiry:
   if (transfer.expiresAt - new Date() < MIN_MESSAGE_WINDOW) { // don't try to predict forward message window, we just care about securing the backward one
@@ -27,8 +29,11 @@ Hopper.prototype.forward = function(transfer) {
 
   const bestHop = this.table.findBestHop(transfer.ilp)
   if (bestHop.isLocal) {
-    return 'something secret'
-  }    
+    return Promise.resolve({
+      method: 'fulfill_condition',
+      body: [ transfer.id, 'something secret' ]
+    })
+  }
   // 2) check amount > exchangeRate(nextAmount):
   if (transfer.amount <= bestHop.nextAmount) {
     transfer.method = 'reject'
@@ -46,7 +51,19 @@ Hopper.prototype.forward = function(transfer) {
   console.log('forwarding, pay!', transfer, this.ilpNodeObj.hostname, bestHop)
   // Peer.prototype.pay = async function(amountStr, condition, expiresAtMs, packet)
   console.log('determining', bestHop, transfer, nextExpiryMs)
-  return this.ilpNodeObj.peers[bestHop.nextHost].pay(bestHop.nextAmount, transfer.executionCondition, nextExpiryMs, transfer.ilp)
+  const outgoingUuid = uuid()
+
+  this.pendingFulfill[outgoingUuid] = {
+    incomingPeerHost,
+    incomingUuid: transfer.id
+  }
+  return this.ilpNodeObj.peers[bestHop.nextHost].pay(bestHop.nextAmount, transfer.executionCondition, nextExpiryMs, transfer.ilp, outgoingUuid)
+}
+
+Hopper.prototype.fulfill = function(outgoingUuid, fulfillment) {
+  let remembered = this.pendingFulfill[outgoingUuid]
+  delete this.pendingFulfill[outgoingUuid]
+  return this.ilpNodeObj.peers[remembered.incomingPeerHost].fulfill(remembered.incomingUuid, fulfillment)
 }
 
 // The rest of the Hopper class implements routing tables:
