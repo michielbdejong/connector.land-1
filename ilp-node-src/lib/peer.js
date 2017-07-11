@@ -8,6 +8,7 @@ const crypto = require('crypto')
 const sha256 = (secret) => { return crypto.createHmac('sha256', secret).digest('base64') }
 
 function Peer(uri, tokenStore, hopper, peerPublicKey, fetch, actAsConnector, testLedgerBase) {
+  this.uri = uri
   this.peerHost = uri.split('://')[1].split('/')[0].split(':').reverse().join('.') // e.g. 8000.localhost or asdf1.com
   this.actAsConnector = actAsConnector
   this.fetch = fetch
@@ -26,7 +27,7 @@ Peer.prototype = {
       method: 'POST', headers: {
         'Content-Type': 'application/json',
         Authorization: 'Bearer ' + this.authToken
-      }, body: JSON.stringify(postBody, null, 2)
+      }, body: JSON.stringify(postData, null, 2)
     }).then(res => res.json())
   },
     /////////////////////

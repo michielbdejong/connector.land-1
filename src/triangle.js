@@ -10,7 +10,8 @@ const node3 = new IlpNode({ set: function(k, v, cb) { storage['3_' + k] = v; cb(
 simulator.registerUri('https://asdf1.com/.well-known/webfinger', url => {
   return node1.handleWebFinger(url.split('?resource=')[1])
 })
-simulator.registerUri('https://asdf1.com/rpc', (params, bodyStr) => {
+simulator.registerUri('https://asdf1.com/rpc', (url, params, bodyStr) => {
+  console.log('handler called!', { url, params, bodyStr })
   let bodyObj
   try {
     bodyObj = JSON.parse(bodyStr)
@@ -23,7 +24,7 @@ simulator.registerUri('https://asdf1.com/rpc', (params, bodyStr) => {
 simulator.registerUri('https://asdf2.com/.well-known/webfinger', url => {
   return node2.handleWebFinger(url.split('?resource=')[1])
 })
-simulator.registerUri('https://asdf2.com/rpc', (params, bodyStr) => {
+simulator.registerUri('https://asdf2.com/rpc', (url, params, bodyStr) => {
   let bodyObj
   try {
     bodyObj = JSON.parse(bodyStr)
@@ -36,7 +37,7 @@ simulator.registerUri('https://asdf2.com/rpc', (params, bodyStr) => {
 simulator.registerUri('https://asdf3.com/.well-known/webfinger', url => {
   return node3.handleWebFinger(url.split('?resource=')[1])
 })
-simulator.registerUri('https://asdf3.com/rpc', (params, bodyStr) => {
+simulator.registerUri('https://asdf3.com/rpc', (url, params, bodyStr) => {
   let bodyObj
   try {
     bodyObj = JSON.parse(bodyStr)
