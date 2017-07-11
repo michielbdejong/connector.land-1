@@ -8,68 +8,26 @@ const crypto = require('crypto')
 const sha256 = (secret) => { return crypto.createHmac('sha256', secret).digest('base64') }
 
 function Peer(uri, tokenStore, hopper, peerPublicKey, fetch, actAsConnector, testLedgerBase) {
-  const uriParts = uri.split('://')[1].split('/')
-  const hostParts = uriParts.shift().split(':')
-  this.path = '/' + uriParts.join('/')
-  this.peerHost = hostParts[0]
-  if (hostParts.length > 1) {
-    this.port = hostParts[1]
-  }
+  this.peerHost = uri.split('://')[1].split('/')[0].split(':').reverse().join('.') // e.g. 8000.localhost or asdf1.com
   this.actAsConnector = actAsConnector
-  this.rate = 1.0 // for now, all peers are in USD
   this.fetch = fetch
-  this.quoteId = 0
   this.peerPublicKey = peerPublicKey
   this.ledger = 'peer.' + tokenStore.getToken('token', peerPublicKey).substring(0, 5) + '.usd.9.';
   this.authToken = tokenStore.getToken('authorization', peerPublicKey)
   this.myPublicKey = tokenStore.peeringKeyPair.pub
-  this.routes = {}
   this.hopper = hopper
   this.testLedger = testLedgerBase + 'test-to-peer.' + this.peerPublicKey + '.'
   this.testRouteAnnounced = false
 }
 
 Peer.prototype = {
-    //////////////
-   // OUTGOING //
-  //////////////
-  postToPeer: async function(method, postData, topLevel = false) {
-    // if topLevel is false, the postData is embedded in a 'custom' field of a bigger
-    // object, otherwise it's not.
-    const options = {
-      host: this.peerHost,
-      port: this.port,
-      path: this.path + `?method=${method}&prefix=${this.ledger}`,
-      method: 'POST',
-      headers: {
+  postToPeer: async function(method, postData) {
+    return this.fetch(this.uri+ `?method=${method}&prefix=${this.ledger}`, {
+      method: 'POST', headers: {
         'Content-Type': 'application/json',
         Authorization: 'Bearer ' + this.authToken
-      }
-    }
-    return await new Promise((resolve, reject) => {
-      const req = this.fetch.request(options, (res) => {
-        res.setEncoding('utf8')
-        var str = ''
-        res.on('data', (chunk) => { str += chunk })
-        res.on('end', () => { resolve(str) })
-      })
-      req.on('error', reject)
-      let arr = postData
-      if (typeof this !== 'object') {
-        console.error('ledger panic 1')
-      }
-      if (!topLevel) {
-        arr = [ {
-          ledger: this.ledger,
-          // work around https://github.com/interledgerjs/ilp-plugin-virtual/issues/74
-          from: this.ledger + this.myPublicKey,
-          to: this.ledger + this.peerPublicKey,
-          custom: postData
-        } ]
-      }
-      req.write(JSON.stringify(arr, null, 2))
-      req.end()
-    })
+      }, body: JSON.stringify(postBody, null, 2)
+    }).then(res => res.json())
   },
     /////////////////////
    // OUTGOING ROUTES //
@@ -78,21 +36,19 @@ Peer.prototype = {
       if (typeof this !== 'object') {
         console.error('ledger panic 2')
       }
-    await this.postToPeer('send_request', {
-      method: 'broadcast_routes',
-      data: {
-        new_routes: [ {
-          source_ledger: this.ledger,
-          destination_ledger: ledger,
-          points: curve,
-          min_message_window: 1,
-          paths: [ [] ],
-          source_account: this.ledger + this.myPublicKey
-        } ],
-        hold_down_time: 45000,
-        unreachable_through_me: []
+    await this.postToPeer('send_request', [ {
+      ledger: this.ledger, from: this.ledger + this.myPublicKey, to: this.ledger + this.peerPublicKey, custom: {
+        method: 'broadcast_routes', data: { new_routes: [ {
+            source_ledger: this.ledger,
+            destination_ledger: ledger,
+            points: curve,
+            min_message_window: 1,
+            paths: [ [] ],
+            source_account: this.ledger + this.myPublicKey
+          } ], hold_down_time: 45000, unreachable_through_me: []
+        }
       }
-    })
+    } ])
   },
   announceTestRoute: async function() {
     if (this.testRouteAnnounced) { return }

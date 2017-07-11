@@ -152,17 +152,8 @@ IlpNode.prototype = {
     this.creds.hosts[hash(peerHostname)] = { hostname: peerHostname }
     this.stats.hosts[hash(peerHostname)] = await getHostInfo(peerHostname, this.previousStats.hosts[peerHostname] || {}, this.fetch)
     if (this.stats.hosts[hash(peerHostname)].pubKey && !this.peers[peerHostname]) {
-      // console.log('peering!', peerHostname)
-      let fetch
-      if (this.fetch) {
-        fetch = this.fetch
-      } else if (peerHostname.split(':')[0] === 'localhost') {
-        fetch = require('http') // TODO: check if fetch.request exists, and if not, rewrite this code to use node-fetch
-      } else {
-        fetch = require('node-fetch')
-      }
       console.log('INSTANTIATING PEER!', peerHostname, 'should I act as a connector?', this.hostname, this.actAsConnector)
-      this.peers[peerHostname] = new Peer(this.stats.hosts[hash(peerHostname)].peersRpcUri, this.tokenStore, this.hopper, this.stats.hosts[hash(peerHostname)].pubKey, fetch, this.actAsConnector, this.testLedgerBase)
+      this.peers[peerHostname] = new Peer(this.stats.hosts[hash(peerHostname)].peersRpcUri, this.tokenStore, this.hopper, this.stats.hosts[hash(peerHostname)].pubKey, this.fetch, this.actAsConnector, this.testLedgerBase)
     }
     this.creds.ledgers[this.peers[peerHostname].ledger] = { hostname: peerHostname }
     // console.log('linked', this.peers[peerHostname].ledger, peerHostname)
