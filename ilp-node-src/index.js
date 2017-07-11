@@ -176,7 +176,7 @@ IlpNode.prototype = {
           console.log('testLedgerBase', this.testLedgerBase)
           if (ledgerName.startsWith(this.testLedgerBase)) {
             // console.log('looking for peerLedgers', ledgerName)
-            for (let peerLedger of this.stats.ledgers[ledgerName].routes) {
+            for (let peerLedger in this.stats.ledgers[ledgerName].routes) {
               if (peerLedger === testHostname) {
                 console.log('found a route to test', testHostname, ledgerName)
                 this.peers[testHostname].prepareTestPayment(ledgerName)
