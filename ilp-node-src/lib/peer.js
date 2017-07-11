@@ -22,14 +22,15 @@ function Peer(uri, tokenStore, hopper, peerPublicKey, fetch, actAsConnector, tes
 }
 
 Peer.prototype = {
-  postToPeer: async function(method, postData) {
+  postToPeer(method, postData) {
     return this.fetch(this.uri+ `?method=${method}&prefix=${this.ledger}`, {
       method: 'POST', headers: {
         'Content-Type': 'application/json',
         Authorization: 'Bearer ' + this.authToken
       }, body: JSON.stringify(postData, null, 2)
     }).then(res => {
-      let ret = res.json()
+      return res.json()
+    }).then(ret => {
       console.log('post response!', method, ret)
       return ret
     })
@@ -37,11 +38,11 @@ Peer.prototype = {
     /////////////////////
    // OUTGOING ROUTES //
   /////////////////////
-  announceRoute: async function(ledger, curve) {
+  announceRoute(ledger, curve) {
       if (typeof this !== 'object') {
         console.error('ledger panic 2')
       }
-    await this.postToPeer('send_request', [ {
+    return this.postToPeer('send_request', [ {
       ledger: this.ledger, from: this.ledger + this.myPublicKey, to: this.ledger + this.peerPublicKey, custom: {
         method: 'broadcast_routes', data: { new_routes: [ {
             source_ledger: this.ledger,
@@ -55,7 +56,7 @@ Peer.prototype = {
       }
     } ])
   },
-  announceTestRoute: async function() {
+  announceTestRoute() {
     if (this.testRouteAnnounced) { return }
     this.testRouteAnnounced = true
     return this.announceRoute(this.testLedger, IDENTITY_CURVE)
@@ -63,7 +64,7 @@ Peer.prototype = {
     /////////////////////////
    // OUTGOING TRANSFERS //
   ////////////////////////
-  sendTransfer: async function(amountStr, condition, expiresAtMs, packet, outgoingUuid) {
+  sendTransfer(amountStr, condition, expiresAtMs, packet, outgoingUuid) {
     return this.postToPeer('send_transfer', [ {
       id: outgoingUuid,
       amount: amountStr,
@@ -72,7 +73,7 @@ Peer.prototype = {
       expiresAt: new Date(expiresAtMs),
     } ], true)
   },
-  prepareTestPayment: async function() {
+  prepareTestPayment() {
     const writer1 = new Oer.Writer()
     writer1.writeUInt32(0)
     writer1.writeUInt32(1)
@@ -90,12 +91,12 @@ Peer.prototype = {
     this.hopper.paymentsInitiatedByCondition[testPaymentCondition] = testPaymentPreimage
     return this.sendTransfer('2', testPaymentCondition, new Date().getTime() + 10000,  ilpPacket, testPaymentId)
   },  
-  getLimit: async function() { return this.postToPeer('get_limit') },
-  getBalance: async function() { return this.postToPeer('get_balance') },
+  getLimit() { return this.postToPeer('get_limit') },
+  getBalance() { return this.postToPeer('get_balance') },
     //////////////
    // INCOMING //
   //////////////
-  handleRpc: async function(params, bodyObj) {
+  handleRpc(params, bodyObj) {
     switch(params.method) {
     case 'send_request':
       if (Array.isArray(bodyObj) && bodyObj[0].data) {
@@ -119,12 +120,12 @@ Peer.prototype = {
       if (typeof this !== 'object') {
         console.error('ledger panic 3')
       }
-      return JSON.stringify({
+      return Promise.resolve(JSON.stringify({
         ledger: this.ledger,
         from: this.ledger + this.myPublicKey,
         to: this.ledger + this.peerPublicKey,
         custom: {}
-      }, null, 2)
+      }, null, 2))
       break;
     case 'send_transfer':
       this.hopper.handleTransfer(bodyObj[0], this.peerHost).then(result => { this.postToPeer(result.method, result.body, true) })
@@ -132,14 +133,14 @@ Peer.prototype = {
       break;
     case 'fulfill_condition':
     case 'reject_incoming_transfer':
-      this.hopper.handleTransferResult(params.method, bodyObj)
+      return this.hopper.handleTransferResult(params.method, bodyObj)
       break;
     case 'get_limit':
     case 'get_balance':
       return '0';
       break;
     default:
-      return 'Unknown rpc-level request method';
+      return Promise.reject(new Error('Unknown rpc-level request method'))
     }
   }
 }
