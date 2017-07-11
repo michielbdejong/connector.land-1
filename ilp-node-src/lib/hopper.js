@@ -16,7 +16,7 @@ function Hopper(ilpNodeObj) {
 // 2) amount > exchangeRate(nextAmount), so that this connector makes a bit of money
 // 3) condition = nextCondition, so that if the next payment gets fulfilled, this connector can also fulfill the source payment
 Hopper.prototype.forward = function(transfer) {
-  console.log('forwarding!', transfer)
+  console.log('forwarding!', transfer, this.ilpNodeObj.hostname)
   // 1) expiry > nextExpiry:
   if (transfer.expiresAt - new Date() < MIN_MESSAGE_WINDOW) { // don't try to predict forward message window, we just care about securing the backward one
     transfer.method = 'reject'
@@ -43,6 +43,7 @@ Hopper.prototype.forward = function(transfer) {
     console.log('nextHost no peer!', Object.keys(this.ilpNodeObj.peers), bestHop)
     return { method: 'reject_incoming_transfer' }
   }
+  console.log('forwarding, pay!', transfer, this.ilpNodeObj.hostname, bestHop)
   return this.ilpNodeObj.peers[bestHop.nextHost].pay(bestHop.nextAmount, transfer.condition, nextExpiry, transfer.ilp)
 }
 
@@ -161,6 +162,7 @@ Table.prototype = {
     const destAmountLowBits = reader2.readUInt32()
     const destAccount = reader2.readVarOctetString().toString('ascii')
     if (destAccount.startsWith(this.ilpNodeObj.testLedger)) {
+      console.log('best hop is local!', destAccount)
       return {
         isLocal: true,
         destAmountHighBits,
@@ -168,19 +170,20 @@ Table.prototype = {
         destAccount
       }
     }
+    console.log('finding best hop from table!', destAccount)
     const subTable = this.findSubTable(destAccount.split('.'), true)
     let bestHost
     let bestDistance
     let bestPrice
-    console.log('comparing various hops', Object.keys(this.routes))
-    for (let peerHost in this.routes) {
+    console.log('comparing various hops', Object.keys(subTable.routes))
+    for (let peerHost in subTable.routes) {
       console.log('considering peer!', peerHost)
-      let thisDistance = calcDistance(this.routes[peerHost])
+      let thisDistance = calcDistance(subTable.routes[peerHost])
       if (bestHost && bestDistance < thisDistance) {
         continue // too long, discard
       }
-      let thisPrice = calcPrice(this.routes[peerHost], sourceAmount, destAmountLowBits)
-      if (bestHop && bestPrice <= thisPrice) {
+      let thisPrice = calcPrice(subTable.routes[peerHost], undefined, destAmountLowBits)
+      if (bestHost && bestPrice <= thisPrice) {
         continue // too expensive, discard
       }
       bestHost = peerHost

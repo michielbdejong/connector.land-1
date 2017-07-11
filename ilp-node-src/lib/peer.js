@@ -230,7 +230,7 @@ Peer.prototype.handleRpc = async function(params, bodyObj) {
           console.log('adding the route; I am', this.hopper.ilpNodeObj.hostname, this.actAsConnector, 'the announcing peer is ', this.peerHost, 'the route is for', route.destination_ledger)
           this.hopper.table.addRoute(this.peerHost, route, this.actAsConnector)
           if (route.destination_ledger = this.testLedger) {
-            console.log('loop found!')
+            console.log('loop found!', this.testLedger, 'sending test payment to it am-to', this.hopper.ilpNodeObj.hostname, this.peerHost)
             this.prepareTestPayment()
           } 
         })
