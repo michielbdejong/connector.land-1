@@ -133,7 +133,7 @@ Table.prototype = {
       }
       for (let peerHost in this.routes) {
         const peerTitle = getTitle(peerHost) 
-        ledgersStats[this.prefix].routes[peerTitle] = this.routes[peerHost]
+        ledgerStats[this.prefix].routes[peerTitle] = this.routes[peerHost]
       }
     }
     for (let infix in this.subTables) {
