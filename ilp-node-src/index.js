@@ -63,9 +63,10 @@ IlpNode.prototype = {
   },
   
   collectLedgerStats: async function(minDelay) {
-    if (this.lastLedgerStatsCollectionTime > new Date().getTime() - minDelay) {
-      return
-    }
+//    if (this.lastLedgerStatsCollectionTime > new Date().getTime() - minDelay) {
+// 
+//      return
+//    }
     this.stats.ledgers = this.hopper.table.collectLedgerStats((peerHost) => { return this.stats.hosts[hash(peerHost)].title })
     this.lastLedgerStatsCollectionTime = new Date().getTime()
     await this.save('stats')
