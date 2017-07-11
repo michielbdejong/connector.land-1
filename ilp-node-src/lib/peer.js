@@ -99,6 +99,7 @@ Peer.prototype = {
       if (Array.isArray(bodyObj) && bodyObj[0].custom) {
         switch(bodyObj[0].custom.method) {
         case 'broadcast_routes':
+          console.log('received routes!', this.peerHost, bodyObj[0].custom.data.new_routes)
           bodyObj[0].custom.data.new_routes.map(route => {
             this.hopper.table.addRoute(this.peerHost, route, this.actAsConnector)
             if (route.destination_ledger = this.testLedger && !this.actAsConnector) {
