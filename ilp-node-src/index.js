@@ -66,22 +66,8 @@ IlpNode.prototype = {
     if (this.lastLedgerStatsCollectionTime > new Date().getTime() - minDelay) {
       return
     }
-    // erase
-    this.stats.ledgers = {}
+    this.stats.ledgers = this.hopper.table.collectLedgerStats((peerHost) => { return this.stats.hosts[hash(peerHost)].title })
     this.lastLedgerStatsCollectionTime = new Date().getTime()
-    for (let peerHost in this.peers) {
-      // console.log(this.stats, '1')
-      const peerTitle = this.stats.hosts[hash(peerHost)].title
-      for (let dest in this.peers[peerHost].routes) {
-        if (typeof this.stats.ledgers[dest] === 'undefined') {
-          this.stats.ledgers[dest] = {
-             ledgerName: dest,
-             routes: {}
-          }
-        }
-        this.stats.ledgers[dest].routes[peerTitle] = this.peers[peerHost].routes[dest]
-      }
-    }
     await this.save('stats')
   },
   load: function(key) {

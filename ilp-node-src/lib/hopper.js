@@ -123,6 +123,24 @@ function Table(ilpNodeObj, prefix = '') {
 }
 
 Table.prototype = {
+  collectLedgerStats(getTitle) {
+    let ledgerStats = {}
+    if (Object.keys(this.routes).length) {
+      console.log('new stats for prefix!', this.prefix)
+      ledgerStats[this.prefix] = {
+         ledgerName: this.prefix,
+         routes: {}
+      }
+      for (let peerHost in this.routes) {
+        const peerTitle = getTitle(peerHost) 
+        ledgersStats[this.prefix].routes[peerTitle] = this.routes[peerHost]
+      }
+    }
+    for (let infix in this.subTables) {
+      ledgerStats = Object.assign(ledgerStats, this.subTables[infix].collectLedgerStats(getTitle))
+    }
+    return ledgerStats
+  },
   findSubTable(addressParts, orLastAncestor) {
     if (addressParts.length === 1) {
       return this
