@@ -7,7 +7,7 @@ const uuid = require('uuid/v4')
 const crypto = require('crypto')
 const sha256 = (secret) => { return crypto.createHmac('sha256', secret).digest('base64') }
 
-function Peer(uri, tokenStore, hopper, peerPublicKey, fetch, actAsConnector) {
+function Peer(uri, tokenStore, hopper, peerPublicKey, fetch, actAsConnector, testLedgerBase) {
   const uriParts = uri.split('://')[1].split('/')
   const hostParts = uriParts.shift().split(':')
   this.path = '/' + uriParts.join('/')
@@ -25,7 +25,7 @@ function Peer(uri, tokenStore, hopper, peerPublicKey, fetch, actAsConnector) {
   this.myPublicKey = tokenStore.peeringKeyPair.pub
   this.routes = {}
   this.hopper = hopper
-  this.testLedger = 'g.dns.' + this.hopper.ilpNodeObj.hostname.split('.').reverse().join('.') + '.'
+  this.testLedger = testLedgerBase + 'test-to-peer.' + this.peerPublicKey + '.'
   this.testRouteAnnounced = false
 }
 
@@ -145,9 +145,9 @@ Peer.prototype = {
         case 'broadcast_routes':
           bodyObj[0].custom.data.new_routes.map(route => {
             this.hopper.table.addRoute(this.peerHost, route, this.actAsConnector)
-            // if (route.destination_ledger = this.testLedger && !this.actAsConnector) {
-            //   this.prepareTestPayment()
-            // } 
+            if (route.destination_ledger = this.testLedger && !this.actAsConnector) {
+              this.prepareTestPayment()
+            } 
           })
           break
         default:

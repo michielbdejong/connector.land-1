@@ -24,7 +24,7 @@ function IlpNode (kv, hostname, simulator, actAsConnector = false) {
     this.fetch = realFetch
   }
   this.hostname = hostname
-  this.testLedger = 'g.dns.' + this.hostname.split('.').reverse().join('.')
+  this.testLedgerBase = 'g.dns.' + this.hostname.split('.').reverse().join('.') + '.'
   this.previousStats = {
     hosts: {},
     ledgers: {},
@@ -162,7 +162,7 @@ IlpNode.prototype = {
         fetch = require('node-fetch')
       }
       console.log('INSTANTIATING PEER!', peerHostname, 'should I act as a connector?', this.hostname, this.actAsConnector)
-      this.peers[peerHostname] = new Peer(this.stats.hosts[hash(peerHostname)].peersRpcUri, this.tokenStore, this.hopper, this.stats.hosts[hash(peerHostname)].pubKey, fetch, this.actAsConnector)
+      this.peers[peerHostname] = new Peer(this.stats.hosts[hash(peerHostname)].peersRpcUri, this.tokenStore, this.hopper, this.stats.hosts[hash(peerHostname)].pubKey, fetch, this.actAsConnector, this.testLedgerBase)
     }
     this.creds.ledgers[this.peers[peerHostname].ledger] = { hostname: peerHostname }
     // console.log('linked', this.peers[peerHostname].ledger, peerHostname)
@@ -195,8 +195,8 @@ IlpNode.prototype = {
         // console.log('route announced, now let\'s see if a payment works!', Object.keys(this.stats.ledgers))
         // prepare a test payment to each ledger that was announced by this peer:
         Object.keys(this.stats.ledgers).map(ledgerName => {
-          console.log('testLedger', this.testLedger)
-          if (ledgerName.startsWith(this.testLedger)) {
+          console.log('testLedgerBase', this.testLedgerBase)
+          if (ledgerName.startsWith(this.testLedgerBase)) {
             // console.log('looking for peerLedgers', ledgerName)
             for (let peerLedger of this.stats.ledgers[ledgerName].routes) {
               if (peerLedger === testHostname) {
