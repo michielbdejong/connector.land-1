@@ -55,6 +55,9 @@ Peer.prototype = {
       })
       req.on('error', reject)
       let arr = postData
+      if (typeof this !== 'object') {
+        console.error('ledger panic 1')
+      }
       if (!topLevel) {
         arr = [ {
           ledger: this.ledger,
@@ -72,6 +75,9 @@ Peer.prototype = {
    // OUTGOING ROUTES //
   /////////////////////
   announceRoute: async function(ledger, curve) {
+      if (typeof this !== 'object') {
+        console.error('ledger panic 2')
+      }
     await this.postToPeer('send_request', {
       method: 'broadcast_routes',
       data: {
@@ -147,6 +153,9 @@ Peer.prototype = {
         default:
           console.error('Unknown ledger-level request method', bodyObj[0].custom.method)
         }
+      }
+      if (typeof this !== 'object') {
+        console.error('ledger panic 3')
       }
       return JSON.stringify({
         ledger: this.ledger,
