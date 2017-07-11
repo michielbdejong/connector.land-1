@@ -8,7 +8,6 @@ const crypto = require('crypto')
 const sha256 = (secret) => { return crypto.createHmac('sha256', secret).digest('base64') }
 
 function Peer(uri, tokenStore, hopper, peerPublicKey, fetch, actAsConnector) {
-  // console.log('Peer', uri, tokenStore, hopper, peerPublicKey)
   const uriParts = uri.split('://')[1].split('/')
   const hostParts = uriParts.shift().split(':')
   this.path = '/' + uriParts.join('/')
@@ -92,14 +91,12 @@ Peer.prototype = {
   announceTestRoute: async function() {
     if (this.testRouteAnnounced) { return }
     this.testRouteAnnounced = true
-    console.log('I am', this.hopper.ilpNodeObj.hostname, 'test route announcing now to ', this.peerHost)
     return this.announceRoute(this.testLedger, IDENTITY_CURVE)
   },
     /////////////////////////
    // OUTGOING TRANSFERS //
   ////////////////////////
   sendTransfer: async function(amountStr, condition, expiresAtMs, packet, outgoingUuid) {
-    console.log('sending payment', amountStr, condition, expiresAtMs, packet, this.hopper.ilpNodeObj.hostname, this.peerHost)
     return this.postToPeer('send_transfer', [ {
       id: outgoingUuid,
       amount: amountStr,
@@ -132,7 +129,6 @@ Peer.prototype = {
    // INCOMING //
   //////////////
   handleRpc: async function(params, bodyObj) {
-    console.log('incoming rpc', this.hopper.ilpNodeObj.hostname, this.peerHost, params, bodyObj)
     switch(params.method) {
     case 'send_request':
       if (Array.isArray(bodyObj) && bodyObj[0].data) {
@@ -144,11 +140,7 @@ Peer.prototype = {
           bodyObj[0].custom.data.new_routes.map(route => {
             this.hopper.table.addRoute(this.peerHost, route, this.actAsConnector)
             if (route.destination_ledger = this.testLedger && !this.actAsConnector) {
-              if (this.peerHost === 'asdf3.com') {
-                this.prepareTestPayment()
-              } else {
-                console.log('skipping test payment to', this.peerHost)
-              }
+              this.prepareTestPayment()
             } 
           })
           break
@@ -164,7 +156,6 @@ Peer.prototype = {
       }, null, 2)
       break;
     case 'send_transfer':
-      console.log('seeing transfer come in!', JSON.stringify(bodyObj, null, 2), { am: this.hopper.ilpNodeObj.hostname, from: this.peerHost })
       this.hopper.handleTransfer(bodyObj[0], this.peerHost).then(result => { this.postToPeer(result.method, result.body, true) })
       return true
       break;

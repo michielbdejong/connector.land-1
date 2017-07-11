@@ -95,7 +95,6 @@ function calcDistance(route) {
 }
 
 function calcPrice(route, sourceAmount, finalAmount) {
-  console.log('calcPrice Buffer.from!', route.points)
   let buffer = Buffer.from(route.points, 'base64')
   const array = new Uint32Array(buffer.buffer, buffer.byteOffset, buffer.length / 4)
   let prevX = 0
@@ -147,7 +146,6 @@ Table.prototype = {
   },
   addRoute(peerHost, routeObj, andBroadcast = false) {
     const subTable = this.findSubTable(routeObj.destination_ledger.split('.'), false)
-    console.log('subTable found', subTable.prefix, peerHost)
     subTable.routes[peerHost] = routeObj
     if (andBroadcast) {
       Object.keys(this.ilpNodeObj.peers).map(otherPeer => {
