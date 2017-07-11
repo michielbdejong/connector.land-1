@@ -7,7 +7,6 @@ const publicFolder = process.env.PUBLIC_FOLDER || './public'
 const hostname = process.env.HOSTNAME || 'connector.land'
 const port = process.env.PORT || 6000
 const probeInterval = process.env.PROBE_INTERVAL || 10000
-const redisUrl = 
 
 const redisClient = redis.createClient({ url: process.env.REDIS_URL })
 redisClient.on('error', function (err) {
