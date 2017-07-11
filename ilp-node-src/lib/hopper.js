@@ -3,70 +3,84 @@ const MIN_MESSAGE_WINDOW = 10000
 
 const Oer = require('oer-utils')
 const uuid = require('uuid/v4')
+const crypto = require('crypto')
+const sha256 = (secret) => { return crypto.createHmac('sha256', secret).digest('base64') }
 
 function Hopper(ilpNodeObj) {
   this.ilpNodeObj = ilpNodeObj
-  if (!this.ilpNodeObj) {
-    console.error('panic 3')
-  }
   this.table = new Table(this.ilpNodeObj, '')
-  this.pendingFulfill = {}
+  this.pending = {}
+  this.paymentsInitiatedById = {}
+  this.paymentsInitiatedByCondition = {}
 }
 
-// this is where the Interledger chaining layer is implemented! Namely, forward a payment if all of:
-// 1) expiry > nextExpiry, so that this connector has time to fulfill
-// 2) amount > exchangeRate(nextAmount), so that this connector makes a bit of money
-// 3) condition = nextCondition, so that if the next payment gets fulfilled, this connector can also fulfill the source payment
-Hopper.prototype.forward = function(transfer, incomingPeerHost) {
-  console.log('forwarding!', transfer, this.ilpNodeObj.hostname)
-  // 1) expiry > nextExpiry:
-  if (transfer.expiresAt - new Date() < MIN_MESSAGE_WINDOW) { // don't try to predict forward message window, we just care about securing the backward one
-    transfer.method = 'reject'
-    transfer.reason = 'not enough time'
-    return transfer
-  }
-  const nextExpiryMs = new Date(transfer.expiresAt).getTime() - MIN_MESSAGE_WINDOW
+function makeFulfillment(id, preimage) { return { method: 'fulfill_condition', body: [ id, preimage ] } }
+function makeRejection(id, reason) { return { method: 'reject_incoming_transfer', body: [ id, reason ] } }
 
-  const bestHop = this.table.findBestHop(transfer.ilp)
-  if (bestHop.isLocal) {
-    return Promise.resolve({
-      method: 'fulfill_condition',
-      body: [ transfer.id, 'something secret' ]
+// this is where the Interledger chaining layer is implemented! Forward a payment if all of 1), 2), and 3):
+Hopper.prototype = {
+  handleTransfer(transfer, incomingPeerHost) {
+    // 1) expiry > nextExpiry, so that this connector has time to fulfill
+    if (transfer.expiresAt - new Date() < MIN_MESSAGE_WINDOW) { return Promise.resolve(makeRejection(transfer.id, 'not enough time')) }
+    const nextExpiryMs = new Date(transfer.expiresAt).getTime() - MIN_MESSAGE_WINDOW
+  
+    // this is the path finding step:
+    const bestHop = this.table.findBestHop(transfer.ilp)
+
+    // this is the receiver:
+    if (bestHop.isLocal) {
+      if (!this.paymentsInitiatedByCondition[transfer.executionCondition]) {
+        return Promise.resolve(makeRejection(transfer.id, 'unknown condition'))
+      }
+      return Promise.resolve(makeFulfillment(transfer.id, this.paymentsInitiatedByCondition[transfer.executionCondition]))
+    }
+ 
+    // 2) amount > exchangeRate(nextAmount), so that this connector makes a bit of money
+    if (transfer.amount <= bestHop.nextAmount) { return Promise.resolve(makeRejection(transfer.id, 'not enough money')) }
+  
+    // 3) condition = nextCondition, so that if the next payment gets fulfilled, this connector can also fulfill the source payment
+    if (typeof this.ilpNodeObj.peers[bestHop.nextHost] === 'undefined') { return Promise.resolve(makeRejection(transfer.id, 'no route found')) }
+  
+    // in current protocol (bit annoyingly I guess?), this call returns immediately, and the connector will be called back:
+    const outgoingUuid = uuid()
+    this.ilpNodeObj.peers[bestHop.nextHost].sendTransfer(bestHop.nextAmount, transfer.executionCondition, nextExpiryMs, transfer.ilp, outgoingUuid)
+    return new Promise(resolve => {
+      this.pending[outgoingUuid] = {
+        incomingPeerHost,
+        incomingUuid: transfer.id,
+        executionCondition: transfer.executionCondition,
+        resolve
+      }
     })
+  },
+  handleTransferResult(method, bodyObj) {
+    if (Array.isArray(bodyObj) && this.paymentsInitiatedById[bodyObj[0]]) { // check if we were the sender
+      if (method === 'fulfill_condition') {
+        if (bodyObj[1] === this.paymentsInitiatedById[bodyObj[0]]) {
+          console.log('TEST PAYMENT WAS SUCCESSFUL!')
+        } else {
+          console.log('TEST PAYMENT FULFILLMENT WRONG!', bodyObj, this.paymentsInitiatedById)
+        }
+      } else {
+        console.log('TEST PAYMENT REJECTED!', method, bodyObj)
+      }
+      delete this.paymentsInitiatedById[bodyObj[0]]
+    } else { // check if we forwarded this transfer
+      let remembered = this.pending[bodyObj[0]]
+      if (typeof remembered !== 'object') {
+        console.log('panic!', { method, bodyObj, remembered, pending: this.pending })
+      }
+      delete this.pending[bodyObj[0]]
+      if (method === 'fulfill_condition' && bodyObj[1] && sha256(bodyObj[1]) === remembered.executionCondition) {
+        return this.ilpNodeObj.peers[remembered.incomingPeerHost].postToPeer('fulfill_condition', [ remembered.incomingUuid, bodyObj[1] ], true)
+      } else {
+        return this.ilpNodeObj.peers[remembered.incomingPeerHost].postToPeer('reject_incoming_transfer', [ remembered.incomingUuid, bodyObj[1] ], true)
+      }
+    }
   }
-  // 2) check amount > exchangeRate(nextAmount):
-  if (transfer.amount <= bestHop.nextAmount) {
-    transfer.method = 'reject'
-    transfer.reason = 'not enough money'
-    return transfer
-  }
-  // 3) ensure condition = nextCondition, and forward the payment:
-  if (!this.ilpNodeObj) {
-    console.error('panic 1')
-  }
-  if (typeof this.ilpNodeObj.peers[bestHop.nextHost] === 'undefined') {
-    console.log('nextHost no peer!', Object.keys(this.ilpNodeObj.peers), bestHop)
-    return { method: 'reject_incoming_transfer' }
-  }
-  console.log('forwarding, pay!', transfer, this.ilpNodeObj.hostname, bestHop)
-  // Peer.prototype.pay = async function(amountStr, condition, expiresAtMs, packet)
-  console.log('determining', bestHop, transfer, nextExpiryMs)
-  const outgoingUuid = uuid()
-
-  this.pendingFulfill[outgoingUuid] = {
-    incomingPeerHost,
-    incomingUuid: transfer.id
-  }
-  return this.ilpNodeObj.peers[bestHop.nextHost].pay(bestHop.nextAmount, transfer.executionCondition, nextExpiryMs, transfer.ilp, outgoingUuid)
 }
 
-Hopper.prototype.fulfill = function(outgoingUuid, fulfillment) {
-  let remembered = this.pendingFulfill[outgoingUuid]
-  delete this.pendingFulfill[outgoingUuid]
-  return this.ilpNodeObj.peers[remembered.incomingPeerHost].fulfill(remembered.incomingUuid, fulfillment)
-}
-
-// The rest of the Hopper class implements routing tables:
+// The rest of this file implements routing tables:
 // Given an ilp packet's address and amount, decide
 // * shortestPath & cheapest nextHost to forward it to
 // * efficient nextAmount that will satisfy that nextHost
@@ -132,29 +146,12 @@ Table.prototype = {
     }
   },
   addRoute(peerHost, routeObj, andBroadcast = false) {
-    console.log('addRoute', peerHost, routeObj.destination_ledger, andBroadcast)
- 
     const subTable = this.findSubTable(routeObj.destination_ledger.split('.'), false)
     console.log('subTable found', subTable.prefix, peerHost)
-    subTable.routes[peerHost] = {
-       destination_ledger: routeObj.destination_ledger, // as a sanity check, only
-       min_message_window: routeObj.min_message_window,
-       points: routeObj.points,
-       paths: routeObj.paths
-    }
-    console.log('after adding, routing tree is', JSON.stringify(this.debugTable(), null, 2))
-    if (!this.ilpNodeObj) {
-      console.log('panic 2')
-    }
-    // console.log('subTable updated', subTable, this.ilpNodeObj.peers)
+    subTable.routes[peerHost] = routeObj
     if (andBroadcast) {
-      // console.log('broadcast forward!', Object.keys(this.ilpNodeObj.peers))
       Object.keys(this.ilpNodeObj.peers).map(otherPeer => {
         if (otherPeer !== peerHost) {
-          console.log('forwarding broadcast from-to', peerHost, otherPeer)
-          if (!this.ilpNodeObj) {
-            console.log('panic 4')
-          }
           this.ilpNodeObj.peers[otherPeer].announceRoute(routeObj.destination_ledger, routeObj.points) // TODO: apply own rate
         }
       })
@@ -164,19 +161,12 @@ Table.prototype = {
     const subTable = this.findSubTable(targetPrefix.split('.'), true)
     if (subTable.prefix === targetPrefix) {
       delete subTable.routes[peerHost]
-    } else {
-       console.error('tried to delete route but only found', { peerHost, targetPrefix, lastAncestorFound: subTable.prefix })
     }
   },
   findBestHop(packet) {
-    console.log('findBestHop Buffer.from!', packet)
     const reader1 = Oer.Reader.from(Buffer.from(packet, 'base64'))
-    const packetType = reader1.readUInt8()
-    if (packetType !== 1 /* TYPE_ILP_PAYMENT */) {
-      throw new Error('Packet has incorrect type')
-    }
-    const contents = reader1.readVarOctetString()
-    const reader2 = Oer.Reader.from(contents)
+    const packetType = reader1.readUInt8() // should be 1 for TYPE_ILP_PAYMENT
+    const reader2 = Oer.Reader.from(reader1.readVarOctetString())
     const destAmountHighBits = reader2.readUInt32()
     const destAmountLowBits = reader2.readUInt32()
     const destAccount = reader2.readVarOctetString().toString('ascii')
@@ -189,14 +179,12 @@ Table.prototype = {
         destAccount
       }
     }
-    console.log('finding best hop from table!', destAccount, this.ilpNodeObj.testLedger)
     const subTable = this.findSubTable(destAccount.split('.'), true)
     let bestHost
     let bestDistance
     let bestPrice
     console.log('comparing various hops', Object.keys(subTable.routes))
     for (let peerHost in subTable.routes) {
-      console.log('considering peer!', peerHost)
       let thisDistance = calcDistance(subTable.routes[peerHost])
       if (bestHost && bestDistance < thisDistance) {
         continue // too long, discard
