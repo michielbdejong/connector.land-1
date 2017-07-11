@@ -28,7 +28,10 @@ Peer.prototype = {
         'Content-Type': 'application/json',
         Authorization: 'Bearer ' + this.authToken
       }, body: JSON.stringify(postData, null, 2)
-    }).then(res => res.json())
+    }).then(res => {
+      console.log('post response!', method, res)
+      return res.json()
+    })
   },
     /////////////////////
    // OUTGOING ROUTES //
