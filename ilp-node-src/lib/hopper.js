@@ -124,7 +124,7 @@ function Table(ilpNodeObj, prefix = '') {
 
 Table.prototype = {
   collectLedgerStats(getTitle) {
-    console.log('COLLECTING LEDGER STATS!')
+    console.log('COLLECTING LEDGER STATS!', this.prefix)
     let ledgerStats = {}
     if (Object.keys(this.routes).length) {
       console.log('new stats for prefix!', this.prefix)
@@ -137,6 +137,7 @@ Table.prototype = {
         ledgerStats[this.prefix].routes[peerTitle] = this.routes[peerHost]
       }
     }
+    console.log('infixes to crawl', Object.keys(this.subTables))
     for (let infix in this.subTables) {
       ledgerStats = Object.assign(ledgerStats, this.subTables[infix].collectLedgerStats(getTitle))
     }
