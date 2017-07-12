@@ -4,7 +4,7 @@ const MIN_MESSAGE_WINDOW = 10000
 const Oer = require('oer-utils')
 const uuid = require('uuid/v4')
 const crypto = require('crypto')
-const sha256 = (secret) => { return crypto.createHmac('sha256', secret).digest('base64') }
+const sha256 = (secret) => { return crypto.createHmac('sha256', secret).digest('base64').replace(/\//g, '_').replace(/\+/g, '-').replace(/=/g, '') }
 
 function Hopper(ilpNodeObj) {
   this.ilpNodeObj = ilpNodeObj

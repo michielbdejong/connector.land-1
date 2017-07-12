@@ -1,11 +1,11 @@
-const IDENTITY_CURVE = 'AAAAAAAAAAAAAAAAAAAAAP////////////////////8=' //  Buffer.from( Array(32+1).join('0') + Array(32+1).join('F'), 'hex').toString('base64')
+const IDENTITY_CURVE = 'AAAAAAAAAAAAAAAAAAAAAP____________________8' //  Buffer.from( Array(32+1).join('0') + Array(32+1).join('F'), 'hex').toString('base64').replace(/\//g, '_').replace(/\+/g, '-').replace(/=/g, '')
                                                                       // [ [ '0', '0' ], [ '18446744073709551615', '18446744073709551615' ] ]
 const MIN_MESSAGE_WINDOW = 10000
 
 const Oer = require('oer-utils')
 const uuid = require('uuid/v4')
 const crypto = require('crypto')
-const sha256 = (secret) => { return crypto.createHmac('sha256', secret).digest('base64') }
+const sha256 = (secret) => { return crypto.createHmac('sha256', secret).digest('base64').replace(/\//g, '_').replace(/\+/g, '-').replace(/=/g, '') }
 
 function Peer(uri, tokenStore, hopper, peerPublicKey, fetch, actAsConnector, testLedgerBase) {
   this.uri = uri
@@ -86,9 +86,9 @@ Peer.prototype = {
     const writer2 = new Oer.Writer()
     writer2.writeUInt8(1) // TYPE_ILP_PAYMENT
     writer2.writeVarOctetString(writer1.getBuffer())
-    const ilpPacket = writer2.getBuffer().toString('base64')
+    const ilpPacket = writer2.getBuffer().toString('base64').replace(/\//g, '_').replace(/\+/g, '-').replace(/=/g, '')
     const testPaymentId = uuid()
-    const testPaymentPreimage = crypto.randomBytes(32).toString('base64')
+    const testPaymentPreimage = crypto.randomBytes(32).toString('base64').replace(/\//g, '_').replace(/\+/g, '-').replace(/=/g, '')
     const testPaymentCondition = sha256(testPaymentPreimage)
     this.hopper.paymentsInitiatedById[testPaymentId] = testPaymentPreimage
     this.hopper.paymentsInitiatedByCondition[testPaymentCondition] = testPaymentPreimage
