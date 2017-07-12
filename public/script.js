@@ -36,7 +36,8 @@ var config = {
 
     ledgers: {
       ledgerName: 'Ledger Name',
-      routes: 'Reachable via'
+      routes: 'Reachable via',
+      network: 'Network'
     },
 
     routes: {
@@ -155,6 +156,7 @@ var config = {
     data = {}
     peerHostMap = {}
     for (var ledger in stats.ledgers) {
+      stats.ledgers[ledger].network = (ledger.startsWith('test.') ? 'testnet' : 'live net')
       peerHostMap[ledger] = stats.ledgers[ledger].hostname
     }
     for (var tab in stats) {
