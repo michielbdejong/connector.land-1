@@ -124,6 +124,7 @@ function Table(ilpNodeObj, prefix = '') {
 
 Table.prototype = {
   collectLedgerStats(getTitle) {
+    console.log('COLLECTING LEDGER STATS!')
     let ledgerStats = {}
     if (Object.keys(this.routes).length) {
       console.log('new stats for prefix!', this.prefix)

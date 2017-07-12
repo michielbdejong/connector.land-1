@@ -68,6 +68,7 @@ IlpNode.prototype = {
 //      return
 //    }
     this.stats.ledgers = this.hopper.table.collectLedgerStats((peerHost) => { return this.stats.hosts[hash(peerHost)].title })
+    console.log('ledger stats collected!', this.stats.ledgers, JSON.stringify(this.hopper.table))
     this.lastLedgerStatsCollectionTime = new Date().getTime()
     await this.save('stats')
   },
