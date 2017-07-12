@@ -67,6 +67,9 @@ Peer.prototype = {
   sendTransfer(amountStr, condition, expiresAtMs, packet, outgoingUuid) {
     return this.postToPeer('send_transfer', [ {
       id: outgoingUuid,
+      ledger: this.ledger,
+      from: this.ledger + this.myPublicKey,
+      to: this.ledger + this.peerPublicKey,
       amount: amountStr,
       ilp: packet,
       executionCondition: condition,
