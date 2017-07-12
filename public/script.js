@@ -156,7 +156,7 @@ var config = {
     data = {}
     peerHostMap = {}
     for (var ledger in stats.ledgers) {
-      stats.ledgers[ledger].network = (ledger.startsWith('test.') ? 'testnet' : 'live net')
+      stats.ledgers[ledger].network = (ledger.startsWith('test.') ? 'TEST' : 'live')
       peerHostMap[ledger] = stats.ledgers[ledger].hostname
     }
     for (var tab in stats) {
