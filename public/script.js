@@ -237,7 +237,7 @@ function formatData(obj){
     rows = rows.filter(function(v){
       if (v == '') { return false }
       if (v.title === undefined && v.ledgerName === undefined) { return false }
-      if (typeof v.ledgerName === 'string' && v.ledgerName.startsWith('connectorland.')) { return false }
+      if (typeof v.ledgerName === 'string' && v.ledgerName.startsWith('g.dns.land.connector.')) { return false }
       return true
     })
 
