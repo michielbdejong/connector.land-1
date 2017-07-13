@@ -71,5 +71,8 @@ TokenStore.prototype.getToken = function (input, peerPublicKey) {
     toBuffer(peerPublicKey)
   )).update(input, 'ascii').digest()))
 }
+TokenStore.prototype.getLedgerPrefix = function(peerPublicKey) {
+  return 'peer.' + this.getToken('token', peerPublicKey).substring(0, 5) + '.usd.9.'
+}
 
 module.exports.TokenStore = TokenStore

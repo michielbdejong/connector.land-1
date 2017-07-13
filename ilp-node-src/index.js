@@ -123,49 +123,51 @@ IlpNode.prototype = {
     }
     // console.log('in testAll!', this.creds)
     for (let hostnameHash of Object.keys(this.creds.hosts)) {
-      promises.push(this.testHost(this.creds.hosts[hostnameHash].hostname, false))
+      // peerWithAndTest: async function(peerHostname, rpcPath, ledgerPrefix, token) {
+      promises.push(this.peerWithAndTest(this.creds.hosts[hostnameHash].hostname))
       // this fills up the 'hosts' portion of the stats, by calling both testHost and testPeer
       // the 'ledgers' portion is filled up by incoming route broadcasts
       // testPeer then looks at ledgers that are reachable from this peer and tries to send to them
     }
-
+    console.log('testAll peers (this.creds.hosts from kv-store)', this.creds.hosts)
     await Promise.all(promises)
     await this.save('stats')
     await this.save('creds')
   },
-  peerWith: async function(peerHostname, rpcPath, ledgerPrefix, token) {
-    // console.log(this.hostname, 'peers with', peerHostname)
+  peerWithAndTest: async function(peerHostname) {
+    const creds = this.creds.hosts[hash(peerHostname)]
+    console.log(this.hostname, 'peers with', peerHostname, creds)
     await this.ensureReady()
     // console.log(this.creds, this.stats, this.previousStats, '2')
-    this.creds.hosts[hash(peerHostname)] = { hostname: peerHostname }
-    if (rpcPath && ledgerPrefix && token) {
+    if (!creds) {
+      this.creds.hosts[hash(peerHostname)] = { hostname: peerHostname }
+    }
+    if (creds && creds.rpcPath && creds.ledgerPrefix && creds.token) {
       // when peering using ilp_secret, the 'to' account doesn't really matter, so setting it to 'server':
-      this.peers[peerHostname] = new Peer('https://' + peerHostname + '/' + rpcPath, { peeringKeyPair: { pub: 'me' }, getToken: () => token }, this.hopper, 'peer', this.fetch, this.actAsConnector, this.testLedgerBase)
+      this.peers[peerHostname] = new Peer('https://' + peerHostname + '/' + creds.rpcPath, {
+        peeringKeyPair: { pub: 'me' },
+        getToken: () => creds.token,
+        getLedgerPrefix: () => creds.ledgerPrefix
+      }, this.hopper, 'peer', this.fetch, this.actAsConnector, this.testLedgerBase)
+      console.log('created peer from peer caps!', peerHostname)
     } else {
       this.stats.hosts[hash(peerHostname)] = await getHostInfo(peerHostname, this.previousStats.hosts[peerHostname] || {}, this.fetch)
       if (this.stats.hosts[hash(peerHostname)].pubKey && !this.peers[peerHostname]) {
         console.log('INSTANTIATING PEER!', peerHostname, 'should I act as a connector?', this.hostname, this.actAsConnector)
         this.peers[peerHostname] = new Peer(this.stats.hosts[hash(peerHostname)].peersRpcUri, this.tokenStore, this.hopper, this.stats.hosts[hash(peerHostname)].pubKey, this.fetch, this.actAsConnector, this.testLedgerBase)
+        console.log('created peer from WebFinger!', peerHostname)
       }
     }
     if (this.peers[peerHostname] && this.peers[peerHostname].ledger) {
       this.creds.ledgers[this.peers[peerHostname].ledger] = { hostname: peerHostname }
     }
     // console.log('linked', this.peers[peerHostname].ledger, peerHostname)
-    await this.save('creds')
     await new Promise(resolve => {
       setTimeout(resolve, 100) // wait for peer to also add trustline in triangle set up
       //TODO: avoid needing this by checking if a route broadcast failed, and repeating it in that case
     })
     // console.log('peer was added, testing it now', this.creds.ledgers, this.hostname, peerHostname, this.peers[peerHostname].ledger, this.peers[peerHostname].myPublicKey, this.peers[peerHostname].peerPublicKey)
-    await this.testPeer(peerHostname)
-  },
-  testHost: async function(testHostname, writeStats = true) {
-    await this.ensureReady()
-    this.peerWith(testHostname)
-    if (writeStats) {
-      await this.save('stats')
-    }
+    return this.testPeer(peerHostname)
   },
   testPeer: async function(testHostname) {
     // console.log('testing the peer!', testHostname)
@@ -229,18 +231,24 @@ IlpNode.prototype = {
     if (params.peer.startsWith('ilp_secret:')) {
       const peerCaps = Buffer.from(params.peer.substring('ilp_secret:'.length), 'base64').toString('ascii')
       console.log('handling test', peerCaps)
-      const [ /* 'PROTOCOL://LEDGER:TOKEN@HOST/PATH */, protocol, ledger, token, host, path ] = peerCaps.match(/(http[s]{0,1}):\/\/(.*):(.*)\@(.*)\/(.*)/i)
-      const uri = protocol + '://' + host + '/' + path
+      const [ /* 'PROTOCOL://LEDGER:TOKEN@HOST/PATH */, protocol, ledgerPrefix, token, hostname, rpcPath ] = peerCaps.match(/(http[s]{0,1}):\/\/(.*):(.*)\@(.*)\/(.*)/i)
+      const uri = protocol + '://' + hostname + '/' + rpcPath
       // this.storeToken(uri, ledger, token)
-      // peerWith: async function(peerHostname, rpcPath, ledgerPrefix, token) {
-      console.log('peering...')
-      await this.peerWith(host, '/' + path, ledger, token)
-      console.log('testing...')
-      return this.testPeer(host)
-      console.log('done!')
+      this.creds.hosts[hash(hostname)] = {
+        hostname,
+        rpcPath,
+        ledgerPrefix,
+        token
+      }
+      await this.save('creds')
+      // peerWithAndTest: async function(peerHostname, rpcPath, ledgerPrefix, token) {
+      console.log('peering and testing...', this.creds.hosts, this.creds.hosts[hash(hostname)])
+      await this.peerWithAndTest(hostname)
     } else { // interpret as a hostname, e.g. "ilp-kit.example.com"
-      return this.testHost(params.host, false)
+      await this.peerWithAndTest(params.host)
     }
+    await this.save('stats')
+    await this.save('creds')
   }
 }
 

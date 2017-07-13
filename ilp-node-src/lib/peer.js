@@ -13,7 +13,7 @@ function Peer(uri, tokenStore, hopper, peerPublicKey, fetch, actAsConnector, tes
   this.actAsConnector = actAsConnector
   this.fetch = fetch
   this.peerPublicKey = peerPublicKey
-  this.ledger = 'peer.' + tokenStore.getToken('token', peerPublicKey).substring(0, 5) + '.usd.9.';
+  this.ledger = tokenStore.getLedgerPrefix(peerPublicKey)
   this.authToken = tokenStore.getToken('authorization', peerPublicKey)
   this.myPublicKey = tokenStore.peeringKeyPair.pub
   this.hopper = hopper
@@ -23,13 +23,17 @@ function Peer(uri, tokenStore, hopper, peerPublicKey, fetch, actAsConnector, tes
 
 Peer.prototype = {
   postToPeer(method, postData) {
-    return this.fetch(this.uri+ `?method=${method}&prefix=${this.ledger}`, {
+    console.log('postToPeer', this.uri + `?method=${method}&prefix=${this.ledger}`, this.authToken, postData)
+    return this.fetch(this.uri + `?method=${method}&prefix=${this.ledger}`, {
       method: 'POST', headers: {
         'Content-Type': 'application/json',
         Authorization: 'Bearer ' + this.authToken
       }, body: JSON.stringify(postData, null, 2)
     }).then(res => {
-      return res.json()
+      return res.text()
+    }).then(a => {
+      console.log('response in text', a)
+      return JSON.parse(a)
     }).then(ret => {
       console.log('post response!', method, ret)
       return ret
