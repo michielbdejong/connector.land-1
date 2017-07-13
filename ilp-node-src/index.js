@@ -213,6 +213,12 @@ IlpNode.prototype = {
     // console.log('handle rpc 4', params, body, peerHostname, JSON.stringify(Object.keys(this.peers)), 'are the peer keys')
     return this.peers[peerHostname].handleRpc(params, body)
   },
+  handleTest: function(params, res) {
+    res.write(JSON.stringify(params))
+    setInterval(() => {
+      res.write('.')
+    }, 1000)
+  }
 }
 
 module.exports = IlpNode
