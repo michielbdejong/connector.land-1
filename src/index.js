@@ -5,7 +5,7 @@ const redis = require("redis")
 
 const publicFolder = process.env.PUBLIC_FOLDER || './public'
 const hostname = process.env.HOSTNAME || 'connector.land'
-const port = process.env.PORT || 6000
+const port = process.env.PORT || 6001 // avoid port 6000 because of https://superuser.com/questions/188058/which-ports-are-considered-unsafe-on-chrome
 const probeInterval = process.env.PROBE_INTERVAL || 10000
 
 const redisClient = redis.createClient({ url: process.env.REDIS_URL })
