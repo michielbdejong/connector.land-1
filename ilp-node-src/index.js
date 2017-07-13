@@ -133,15 +133,20 @@ IlpNode.prototype = {
     await this.save('stats')
     await this.save('creds')
   },
-  peerWith: async function(peerHostname) {
+  peerWith: async function(peerHostname, rpcPath, ledgerPrefix, token) {
     // console.log(this.hostname, 'peers with', peerHostname)
     await this.ensureReady()
     // console.log(this.creds, this.stats, this.previousStats, '2')
     this.creds.hosts[hash(peerHostname)] = { hostname: peerHostname }
-    this.stats.hosts[hash(peerHostname)] = await getHostInfo(peerHostname, this.previousStats.hosts[peerHostname] || {}, this.fetch)
-    if (this.stats.hosts[hash(peerHostname)].pubKey && !this.peers[peerHostname]) {
-      console.log('INSTANTIATING PEER!', peerHostname, 'should I act as a connector?', this.hostname, this.actAsConnector)
-      this.peers[peerHostname] = new Peer(this.stats.hosts[hash(peerHostname)].peersRpcUri, this.tokenStore, this.hopper, this.stats.hosts[hash(peerHostname)].pubKey, this.fetch, this.actAsConnector, this.testLedgerBase)
+    if (rpcPath && ledgerPrefix && token) {
+      // when peering using ilp_secret, the 'to' account doesn't really matter, so setting it to 'server':
+      this.peers[peerHostname] = new Peer('https://' + peerHostname + rpcPath, token, this.hopper, 'peer', this.fetch, this.actAsConnector, this.testLedgerBase)
+    } else {
+      this.stats.hosts[hash(peerHostname)] = await getHostInfo(peerHostname, this.previousStats.hosts[peerHostname] || {}, this.fetch)
+      if (this.stats.hosts[hash(peerHostname)].pubKey && !this.peers[peerHostname]) {
+        console.log('INSTANTIATING PEER!', peerHostname, 'should I act as a connector?', this.hostname, this.actAsConnector)
+        this.peers[peerHostname] = new Peer(this.stats.hosts[hash(peerHostname)].peersRpcUri, this.tokenStore, this.hopper, this.stats.hosts[hash(peerHostname)].pubKey, this.fetch, this.actAsConnector, this.testLedgerBase)
+      }
     }
     this.creds.ledgers[this.peers[peerHostname].ledger] = { hostname: peerHostname }
     // console.log('linked', this.peers[peerHostname].ledger, peerHostname)
@@ -213,8 +218,18 @@ IlpNode.prototype = {
     // console.log('handle rpc 4', params, body, peerHostname, JSON.stringify(Object.keys(this.peers)), 'are the peer keys')
     return this.peers[peerHostname].handleRpc(params, body)
   },
-  handleTest: function(params, res) {
-    return JSON.stringify(params)
+  handleTest: async function(params, res) {
+    // 'ilp_secret:'+base64url(Buffer.from('https://' + CONNECTORLAND_LEDGER_PREFIX + ':' + token + '@' + ilpDomain + '/rpc', 'ascii'))
+    if (params.peer.startsWith('ilp_secret:')) {
+      const [ /* 'PROTOCOL://LEDGER:TOKEN@HOST/PATH */, protocol, ledger, token, host, path ] = Buffer.from(peer.substring('ilp_secret:'.length), 'base64').toString('ascii').split('/').match(/(http[s]{0,1}):\/\/(.*):(.*)\@(.*)\/(.*)/i)
+      const uri = protocol + '://' + host + '/' + path
+      // this.storeToken(uri, ledger, token)
+      // peerWith: async function(peerHostname, rpcPath, ledgerPrefix, token) {
+      await this.peerWith(host, path, ledger, token)
+      return this.testPeer(host)
+    } else { // interpret as a hostname, e.g. "ilp-kit.example.com"
+      return this.testHost(params.host, false)
+    }
   }
 }
 
