@@ -6,7 +6,7 @@ function rollingAvg(existing, measured) {
 }
 
 module.exports = async function getHostInfo(hostname, previousObj, fetch) {
-  console.log('getting host info', hostname, previousObj)
+  // console.log('getting host info', hostname, previousObj)
   const obj = {}
   try {
     let protocol = 'https'
@@ -21,9 +21,9 @@ module.exports = async function getHostInfo(hostname, previousObj, fetch) {
     const delay = new Date().getTime() - startTime
 
     // parsing
-    console.log({ response })
+    // console.log({ response })
     const data = await response.json()
-    console.log('data: ', data)
+    // console.log('data: ', data)
     // { subject: 'https://red.ilpdemo.org',
     //   properties:
     //    { 'https://interledger.org/rel/publicKey': '0ZwLzlPLd2UWJPwYSz6RhOh3S-N-cdAhVqG62iqb6xI',
@@ -41,7 +41,7 @@ module.exports = async function getHostInfo(hostname, previousObj, fetch) {
     obj.title = data.properties['https://interledger.org/rel/title']
     if (Array.isArray(data.links)) {
       data.links.map(link => {
-        console.log('SEEING LINK!', data.lin)
+        // console.log('SEEING LINK!', data.lin)
         if (link.rel === 'https://interledger.org/rel/peersRpcUri') {
           obj.peersRpcUri = link.href
         }
@@ -49,13 +49,13 @@ module.exports = async function getHostInfo(hostname, previousObj, fetch) {
     }
     // support ilp-kit version 2:
     if (typeof obj.title !== 'string') {
-      console.log('no title!', data, 'trying', `${protocol}://${hostname}/api/config`)
+      // console.log('no title!', data, 'trying', `${protocol}://${hostname}/api/config`)
       const configResponse = await fetch(`${protocol}://${hostname}/api/config`)
       const configData = await configResponse.json()
-      console.log(configData)
+      // console.log(configData)
       obj.title = configData.title
     }
-    console.log('got pubKey!', obj, data.properties)
+    // console.log('got pubKey!', obj, data.properties)
     obj.health = rollingAvg(previousObj.health, 1)
     obj.latency = rollingAvg(previousObj.latency, delay)
 
@@ -77,7 +77,7 @@ module.exports = async function getHostInfo(hostname, previousObj, fetch) {
     //   }
     // }
   } catch (error) {
-    console.log('error: ', error)
+    // console.log('error: ', error)
     if (obj.hostname) {
       obj.health = rollingAvg(previousObj.health, 0)
       obj.lastDownTime = new Date().getTime()
