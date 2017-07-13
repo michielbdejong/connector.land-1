@@ -214,10 +214,7 @@ IlpNode.prototype = {
     return this.peers[peerHostname].handleRpc(params, body)
   },
   handleTest: function(params, res) {
-    res.write(JSON.stringify(params))
-    setInterval(() => {
-      res.write('.')
-    }, 1000)
+    return JSON.stringify(params)
   }
 }
 

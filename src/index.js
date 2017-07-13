@@ -18,7 +18,6 @@ const ilpNode = new IlpNode(redisClient, hostname)
 const app = new Koa()
 app.use(async function(ctx, next) {
   console.log(ctx.path)
-  ctx.type = 'json'
   switch(ctx.path) {
   case '/.well-known/webfinger': ctx.body = await ilpNode.handleWebFinger(ctx.query.resource, '/spsp')
     break
@@ -34,8 +33,7 @@ app.use(async function(ctx, next) {
     break
   case '/test':
     console.log('test hit!', ctx.query)
-    ctx.type = 'text'
-    ilpNode.handleTest(ctx.query, ctx.res)
+    ctx.body = await ilpNode.handleTest(ctx.query)
     break
   case '/stats':
     await ilpNode.ensureReady()
@@ -49,6 +47,7 @@ app.use(async function(ctx, next) {
   default:
     return next()
   }
+  ctx.type = 'json'
   console.log('rendered', ctx.path, ctx.query, ctx.body)
 })
 app.use(koaStatic(publicFolder))
