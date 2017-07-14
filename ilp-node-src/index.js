@@ -187,12 +187,12 @@ IlpNode.prototype = {
         // console.log('route announced, now let\'s see if a payment works!', Object.keys(this.stats.ledgers))
         // prepare a test payment to each ledger that was announced by this peer:
         Object.keys(this.stats.ledgers).map(ledgerName => {
-          console.log('testLedgerBase', this.testLedgerBase)
+          // console.log('testLedgerBase', this.testLedgerBase)
           if (ledgerName.startsWith(this.testLedgerBase)) {
             // console.log('looking for peerLedgers', ledgerName)
             for (let peerLedger in this.stats.ledgers[ledgerName].routes) {
               if (peerLedger === testHostname) {
-                console.log('found a route to test', testHostname, ledgerName)
+                // console.log('found a route to test', testHostname, ledgerName)
                 this.peers[testHostname].prepareTestPayment(ledgerName)
               }
             }

@@ -17,7 +17,7 @@ const ilpNode = new IlpNode(redisClient, hostname)
 
 const app = new Koa()
 app.use(async function(ctx, next) {
-  console.log(ctx.path)
+  // console.log(ctx.path)
   switch(ctx.path) {
   case '/.well-known/webfinger': ctx.body = await ilpNode.handleWebFinger(ctx.query.resource, '/spsp')
     break
@@ -27,9 +27,9 @@ app.use(async function(ctx, next) {
       ctx.req.on('data', chunk => str += chunk)
       ctx.req.on('end', resolve)
     })
-    console.log('calling ilpNode.handleRpc')
+    // console.log('calling ilpNode.handleRpc')
     ctx.body = await ilpNode.handleRpc(ctx.query, JSON.parse(str))
-    console.log('returned from ilpNode.handleRpc')
+    // console.log('returned from ilpNode.handleRpc')
     break
   case '/test':
     console.log('test hit!', ctx.query)
@@ -39,7 +39,7 @@ app.use(async function(ctx, next) {
     await ilpNode.ensureReady()
     await ilpNode.collectLedgerStats(10000)
     if (typeof ctx.query.test === 'string') {
-      console.log('testing!', ctx.query.test)
+      // console.log('testing!', ctx.query.test)
       await ilpNode.testHost(ctx.query.test)
     }
     ctx.body = ilpNode.stats
@@ -48,7 +48,7 @@ app.use(async function(ctx, next) {
     return next()
   }
   ctx.type = 'json'
-  console.log('rendered', ctx.path, ctx.query, ctx.body)
+  // console.log('rendered', ctx.path, ctx.query, ctx.body)
 })
 app.use(koaStatic(publicFolder))
 app.listen(port)
