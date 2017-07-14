@@ -72,7 +72,7 @@ TokenStore.prototype.getToken = function (input, peerPublicKey) {
   )).update(input, 'ascii').digest()))
 }
 TokenStore.prototype.getLedgerPrefix = function(peerPublicKey) {
-  console.log('calculating ledger prefix!' { myPublicKey: this.peeringKeyPair.pub, peerPublicKey: peerPublickKey })
+  console.log('calculating ledger prefix!', { myPublicKey: this.peeringKeyPair.pub, peerPublicKey: peerPublickKey })
   return 'peer.' + this.getToken('token', peerPublicKey).substring(0, 5) + '.usd.9.'
 }
 
