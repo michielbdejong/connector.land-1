@@ -218,8 +218,9 @@ IlpNode.prototype = {
     await this.ensureReady()
     // console.log('handleRpc 2')
     if (!this.creds.ledgers[params.prefix]) {
-      // console.log('peer not found!', this.creds.ledgers, params, JSON.stringify(this.creds.ledgers))
+      console.log('peer not found!', this.creds.ledgers, params, JSON.stringify(this.creds.ledgers))
       return 'error please retry'
+      // peer not found! { 'peer.UswSQ.usd.9.': { hostname: 'connector.land' } } {} {"peer.UswSQ.usd.9.":{"hostname":"connector.land"}}
     }
     // console.log('handleRpc 3')
     if (typeof this.creds.ledgers[params.prefix] === 'undefined') {
@@ -255,6 +256,37 @@ IlpNode.prototype = {
     }
     await this.save('stats')
     await this.save('creds')
+  },
+  server(req, res) {
+    const pathParts = req.url.split('?')
+    let params = {}
+    if (pathParts.length > 1) {
+      pathParts[1].split('&').map(pair => {
+        const pairParts = pair.split('=')
+        params[pairParts[0]] = pairParts[1]
+      })
+    }
+    console.log('calced params!', params, req.url) 
+    if (pathParts[0] === '/.well-known/webfinger') {
+      promise = this.handleWebFinger(params.resource)
+    } else if (pathParts[0] === '/rpc') {
+      let str = ''
+      req.on('data', (chunk) => { str += chunk })
+      promise = new Promise(resolve => { req.on('end', resolve) }).then(() => {
+        let body = ''
+        try {
+          body = JSON.parse(str)
+        } catch(e) {}
+        console.log('calling rpc', params, body)
+        return this.handleRpc(params, body)
+      })
+    } else {
+      promise = Promise.resolve('wrong url ' + req.url)
+    }
+    promise.then(ret => {
+      res.write(JSON.stringify(ret))
+      res.end()
+    })
   }
 }
 
