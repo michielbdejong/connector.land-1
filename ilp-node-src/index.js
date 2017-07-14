@@ -8,6 +8,9 @@ const realFetch = require('node-fetch')
 
 
 function hash(hostname) {
+  if (typeof hostname !== 'string') {
+    throw new Error('cannot hash!', JSON.stringify(hostname))
+  }
   return crypto
       .createHmac('sha256', 'hostname')
       .update(hostname)
