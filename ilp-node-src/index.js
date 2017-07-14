@@ -230,6 +230,9 @@ IlpNode.prototype = {
     return this.peers[peerHostname].handleRpc(params, body)
   },
   handleTest: async function(params, res) {
+    if (typeof params.peer !== 'string') {
+      return 'Please provide either "?peer=ilp_secret:..." or "?peer=example.com" query parameter'
+    }
     // 'ilp_secret:'+base64url(Buffer.from('https://' + CONNECTORLAND_LEDGER_PREFIX + ':' + token + '@' + ilpDomain + '/rpc', 'ascii'))
     if (params.peer.startsWith('ilp_secret:')) {
       const peerCaps = Buffer.from(params.peer.substring('ilp_secret:'.length), 'base64').toString('ascii')
@@ -248,7 +251,7 @@ IlpNode.prototype = {
       console.log('peering and testing...', this.creds.hosts, this.creds.hosts[hash(hostname)])
       await this.peerWithAndTest(hostname)
     } else { // interpret as a hostname, e.g. "ilp-kit.example.com"
-      await this.peerWithAndTest(params.host)
+      await this.peerWithAndTest(params.peer)
     }
     await this.save('stats')
     await this.save('creds')
