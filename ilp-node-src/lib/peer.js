@@ -5,11 +5,12 @@ const MIN_MESSAGE_WINDOW = 10000
 const Oer = require('oer-utils')
 const uuid = require('uuid/v4')
 const crypto = require('crypto')
-const sha256 = (secret) => { return crypto.createHmac('sha256', secret).digest('base64').replace(/\//g, '_').replace(/\+/g, '-').replace(/=/g, '') }
+const sha256 = (secret) => { return crypto.createHash('sha256').update(secret).digest('base64').replace(/\//g, '_').replace(/\+/g, '-').replace(/=/g, '') }
 
 function Peer(uri, tokenStore, hopper, peerPublicKey, fetch, actAsConnector, testLedgerBase) {
   this.uri = uri
-  this.peerHost = uri.split('://')[1].split('/')[0].split(':').reverse().join('.') // e.g. 8000.localhost or asdf1.com
+  // this.peerHost = uri.split('://')[1].split('/')[0].split(':').reverse().join('.') // e.g. 8000.localhost or asdf1.com
+  this.peerHost = uri.split('://')[1].split('/')[0] // e.g. localhost:8000 or asdf1.com
   this.actAsConnector = actAsConnector
   this.fetch = fetch
   this.peerPublicKey = peerPublicKey
@@ -80,11 +81,11 @@ Peer.prototype = {
       expiresAt: new Date(expiresAtMs),
     } ], true)
   },
-  prepareTestPayment() {
+  prepareTestPayment(toLedger) {
     const writer1 = new Oer.Writer()
     writer1.writeUInt32(0)
     writer1.writeUInt32(1)
-    writer1.writeVarOctetString(Buffer.from(this.testLedger + 'test', 'ascii'))
+    writer1.writeVarOctetString(Buffer.from((toLedger || this.testLedger) + 'test', 'ascii'))
     writer1.writeVarOctetString(Buffer.from('', 'base64'))
     writer1.writeUInt8(0)
     const writer2 = new Oer.Writer()

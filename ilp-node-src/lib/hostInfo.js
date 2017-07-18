@@ -14,7 +14,7 @@ module.exports = async function getHostInfo(hostname, previousObj, fetch) {
       protocol = 'http'
     }
     const webFingerUri = `${protocol}://${hostname}/.well-known/webfinger?resource=${protocol}://${hostname}`
-
+    console.log('fetching!', webFingerUri)
     // request
     const startTime = new Date().getTime()
     const response = await fetch(webFingerUri)
@@ -23,6 +23,7 @@ module.exports = async function getHostInfo(hostname, previousObj, fetch) {
     // parsing
     // console.log({ response })
     const data = await response.json()
+    console.log('got host info!', webFingerUri, data)
     // console.log('data: ', data)
     // { subject: 'https://red.ilpdemo.org',
     //   properties:
