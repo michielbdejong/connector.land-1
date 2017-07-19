@@ -125,7 +125,7 @@ IlpNode.prototype = {
     this.tokenStore = new keypair.TokenStore(this.creds.keypair)
   },
   testAll: async function() {
-    console.log('testAll!!!!testAll!!!!testAll!!!!testAll!!!!')
+    console.log('testAll!!!!testAll!!!!testAll!!!!testAll!!!!', this.stats)
     const promises = []
     await this.ensureReady()
     this.previousStats = this.stats || { hosts: {}, ledger: {}, routes: {} } // for use in running averages
@@ -218,9 +218,9 @@ IlpNode.prototype = {
       success = 0
     }
     this.stats.hosts[hash(testHostname)].latency = new Date().getTime() - startTime
-    console.log('calling rollingAvg, before', this.stats.hosts[hash(testHostname)].health)
-    this.stats.hosts[hash(testHostname)].health = rollingAvg(this.stats.hosts[hash(testHostname)].health, success, 100)
-    console.log('calling rollingAvg, after', this.stats.hosts[hash(testHostname)].health)
+    console.log('calling rollingAvg, before', this.previousStats.hosts[hash(testHostname)].health, this.stats.hosts[hash(testHostname)].health)
+    this.stats.hosts[hash(testHostname)].health = rollingAvg(this.previousStats.hosts[hash(testHostname)].health, success, 100)
+    console.log('calling rollingAvg, after', this.previousStats.hosts[hash(testHostname)].health, this.stats.hosts[hash(testHostname)].health)
     console.log('stats updated', this.stats.hosts[hash(testHostname)])
 
     try {
