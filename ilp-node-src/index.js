@@ -154,7 +154,8 @@ IlpNode.prototype = {
         protocol = 'http'
       }
       this.stats.hosts[hash(peerHostname)] = {
-        title: 'peer-' + hash(peerHostname).substring(0, 7)
+        title: 'peer-' + hash(peerHostname).substring(0, 7),
+        version: 'Unknown'
       }
       this.peers[peerHostname] = new Peer(protocol + '://' + peerHostname + '/' + creds.rpcPath, {
         peeringKeyPair: { pub: 'me' },
@@ -193,7 +194,11 @@ IlpNode.prototype = {
     if (!this.stats.hosts[hash(testHostname)]) {
       this.stats.hosts[hash(testHostname)] = {}
     }
+    const startTime = new Date().getTime()
     this.stats.hosts[hash(testHostname)].limit = await this.peers[testHostname].getLimit()
+    this.stats.hosts[hash(testHostname)].latency = new Date().getTime() - startTime
+    this.stats.hosts[hash(testHostname)].lastDownTime = new Date().getTime()
+
     // console.log('FOUND LIMIT!', testHostname, this.stats.hosts[hash(testHostname)].limit)
     this.stats.hosts[hash(testHostname)].balance = await this.peers[testHostname].getBalance()
     // console.log('FOUND BALANCE!', testHostname, this.stats.hosts[hash(testHostname)].balance)
