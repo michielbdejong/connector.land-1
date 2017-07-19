@@ -12,7 +12,7 @@ const redisClient = redis.createClient({ url: process.env.REDIS_URL })
 redisClient.on('error', function (err) {
   console.log('Error ' + err)
 })
-
+console.log('created redis client for', process.env.REDIS_URL, process.env.HOSTNAME, process.env.NETWORK_PREFIX)
 const ilpNode = new IlpNode(redisClient, hostname, undefined, false, process.env.NETWORK_PREFIX)
 
 const app = new Koa()
