@@ -208,16 +208,18 @@ IlpNode.prototype = {
       this.stats.hosts[hash(testHostname)].limit = await this.peers[testHostname].getLimit()
       this.stats.hosts[hash(testHostname)].lastDownTime = new Date().getTime()
     } catch(e) {
+      console.log('no success', e)
       success = 0
     }
     this.stats.hosts[hash(testHostname)].latency = new Date().getTime() - startTime
     this.stats.hosts[hash(testHostname)].health = rollingAvg(this.stats.hosts[hash(testHostname)].health, success, 100)
     console.log('stats updated', this.stats.hosts[hash(testHostname)])
 
-    // console.log('FOUND LIMIT!', testHostname, this.stats.hosts[hash(testHostname)].limit)
-    this.stats.hosts[hash(testHostname)].balance = await this.peers[testHostname].getBalance()
-    // console.log('FOUND BALANCE!', testHostname, this.stats.hosts[hash(testHostname)].balance)
-    // console.log('announcing test route to', testHostname)
+    try {
+      this.stats.hosts[hash(testHostname)].balance = await this.peers[testHostname].getBalance()
+    } catch(e) {
+    }
+
     if (!this.actAsConnector) {
       await this.peers[testHostname].announceTestRoute()
       setTimeout(() => {
