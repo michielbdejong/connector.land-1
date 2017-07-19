@@ -40,7 +40,7 @@ app.use(async function(ctx, next) {
     await ilpNode.collectLedgerStats(10000)
     if (typeof ctx.query.test === 'string') {
       // console.log('testing!', ctx.query.test)
-      await ilpNode.testHost(ctx.query.test)
+      await ilpNode.handleTest(ctx.query)
     }
     ctx.body = ilpNode.stats
     break
