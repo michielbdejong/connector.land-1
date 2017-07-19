@@ -13,7 +13,7 @@ redisClient.on('error', function (err) {
   console.log('Error ' + err)
 })
 
-const ilpNode = new IlpNode(redisClient, hostname)
+const ilpNode = new IlpNode(redisClient, hostname, undefined, false, process.env.NETWORK_PREFIX)
 
 const app = new Koa()
 app.use(async function(ctx, next) {

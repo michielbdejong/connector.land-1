@@ -115,7 +115,11 @@ Peer.prototype = {
         case 'broadcast_routes':
           console.log('received routes!', this.peerHost, bodyObj[0].custom.data.new_routes)
           bodyObj[0].custom.data.new_routes.map(route => {
-            this.hopper.table.addRoute(this.peerHost, route, this.actAsConnector)
+            try {
+              this.hopper.table.addRoute(this.peerHost, route, this.actAsConnector)
+            } catch(e) {
+              console.error(`Could not add route that came in from ${this.peerHost}`, e)
+            }
             if (route.destination_ledger = this.testLedger && !this.actAsConnector) {
               this.prepareTestPayment()
             } 

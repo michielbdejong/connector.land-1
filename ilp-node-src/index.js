@@ -17,10 +17,12 @@ function hash(hostname) {
       .digest('hex')
 }
 
-function IlpNode (kv, hostname, simulator, actAsConnector = false) {
+function IlpNode (kv, hostname, simulator, actAsConnector = false, networkPrefix = 'g.') {
+const ilpNode = new IlpNode(redisClient, hostname, undefined, false, process.env.NETWORK_PREFIX)
   console.log('IlpNode constructor', hostname, actAsConnector)
   this.kv = kv
   this.actAsConnector = actAsConnector
+  this.networkPrefix = networkPrefix
   if (simulator) {
     this.fetch = simulator
   } else {

@@ -170,6 +170,9 @@ Table.prototype = {
     }
   },
   addRoute(peerHost, routeObj, andBroadcast = false) {
+    if (!routeObj.destination_ledger.startsWith(this.ilpNodeObj.networkPrefix)) {
+      throw new Error (`Route "${routeObj.destination_ledger}" is outside the network "${this.ilpNodeObj.networkPrefix}"!`)
+    }
     console.log('peerHost for addRoute', peerHost)
     const subTable = this.findSubTable(routeObj.destination_ledger.split('.'), false)
     function isBetter(a, b) {
