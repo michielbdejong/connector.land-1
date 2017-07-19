@@ -15,7 +15,7 @@ redisClient.on('error', function (err) {
 })
 console.log(redisClient, 'created redis client for', process.env.REDIS_URL, process.env.HOSTNAME, process.env.NETWORK_PREFIX)
 console.log('const ilpNode = new IlpNode(', redisClient, hostname, undefined, false, process.env.NETWORK_PREFIX)
-const ilpNode = new IlpNode(redisClient, hostname, undefined, false, process.env.NETWORK_PREFIX)
+const ilpNode = new IlpNode({ redisClient: false }, hostname, undefined, false, process.env.NETWORK_PREFIX)
 
 const app = new Koa()
 app.use(async function(ctx, next) {
