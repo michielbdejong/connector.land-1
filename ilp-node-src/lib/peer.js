@@ -33,8 +33,14 @@ Peer.prototype = {
     }).then(res => {
       return res.text()
     }).then(a => {
-      console.log('response in text', a)
-      return JSON.parse(a)
+      let obj
+      try {
+        obj = JSON.parse(a)
+      } catch(e) {
+        console.warn('response not JSON, passing it in text', a)
+        return a
+      }
+      return obj
     }).then(ret => {
       console.log('post response!', method, ret)
       return ret
