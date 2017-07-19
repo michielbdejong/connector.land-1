@@ -162,10 +162,12 @@ IlpNode.prototype = {
       if (peerHostname.split(':')[0] === 'localhost') {
         protocol = 'http'
       }
-      this.stats.hosts[hash(peerHostname)] = {
-        title: 'peer-' + hash(peerHostname).substring(0, 7),
-        version: 'Unknown'
+      if (!this.stats.hosts[hash(peerHostname)]) {
+        this.stats.hosts[hash(peerHostname)] = {}
       }
+      this.stats.hosts[hash(peerHostname)].title: 'peer-' + hash(peerHostname).substring(0, 7)
+      this.stats.hosts[hash(peerHostname)].version: 'Unknown'
+
       this.peers[peerHostname] = new Peer(protocol + '://' + peerHostname + '/' + creds.rpcPath, {
         peeringKeyPair: { pub: 'me' },
         getToken: () => creds.token,
@@ -213,8 +215,9 @@ IlpNode.prototype = {
       success = 0
     }
     this.stats.hosts[hash(testHostname)].latency = new Date().getTime() - startTime
-    console.log('calling rollingAvg', this.stats.hosts[hash(testHostname)].health)
+    console.log('calling rollingAvg, before', this.stats.hosts[hash(testHostname)].health)
     this.stats.hosts[hash(testHostname)].health = rollingAvg(this.stats.hosts[hash(testHostname)].health, success, 100)
+    console.log('calling rollingAvg, after', this.stats.hosts[hash(testHostname)].health)
     console.log('stats updated', this.stats.hosts[hash(testHostname)])
 
     try {
