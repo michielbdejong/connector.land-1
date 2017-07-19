@@ -198,14 +198,14 @@ IlpNode.prototype = {
     return this.testPeer(peerHostname)
   },
   testPeer: async function(testHostname) {
-    console.log('testing the peer!', testHostname, this.stats.hosts[hash(peerHostname)])
+    console.log('testing the peer!', testHostname, this.stats.hosts[hash(testHostname)])
     await this.ensureReady()
     if (!this.peers[testHostname]) {
       console.warn('Attempt to test non-peer', testHostname)
       return
     }
     if (!this.stats.hosts[hash(testHostname)]) {
-      console.log('testPeer creating new stats entry', this.stats.hosts, hash(peerHostname))
+      console.log('testPeer creating new stats entry', this.stats.hosts, hash(testHostname))
       this.stats.hosts[hash(testHostname)] = {}
     }
     const startTime = new Date().getTime()
