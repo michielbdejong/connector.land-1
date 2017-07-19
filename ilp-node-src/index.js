@@ -188,8 +188,8 @@ IlpNode.prototype = {
       console.warn('Attempt to test non-peer', testHostname)
       return
     }
-    if (!this.stats.hosts[hash(peerHostname)]) {
-      this.stats.hosts[hash(peerHostname)] = {}
+    if (!this.stats.hosts[hash(testHostname)]) {
+      this.stats.hosts[hash(testHostname)] = {}
     }
     this.stats.hosts[hash(testHostname)].limit = await this.peers[testHostname].getLimit()
     // console.log('FOUND LIMIT!', testHostname, this.stats.hosts[hash(testHostname)].limit)
