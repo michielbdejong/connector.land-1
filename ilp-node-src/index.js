@@ -163,12 +163,12 @@ IlpNode.prototype = {
       if (peerHostname.split(':')[0] === 'localhost') {
         protocol = 'http'
       }
-      if (!this.stats.hosts[hash(peerHostname)]) {
-        console.log('peerWithAndTest creating new stats entry', this.stats.hosts, hash(peerHostname))
-        this.stats.hosts[hash(peerHostname)] = {}
+      // this overwrites the existing values, but they were already moved to `this.previousStats`, and then
+      // overwritten, at the start of testAll
+      this.stats.hosts[hash(peerHostname)] = {
+        title: 'peer-' + hash(peerHostname).substring(0, 7),
+        version: 'Unknown'
       }
-      this.stats.hosts[hash(peerHostname)].title = 'peer-' + hash(peerHostname).substring(0, 7)
-      this.stats.hosts[hash(peerHostname)].version = 'Unknown'
 
       this.peers[peerHostname] = new Peer(protocol + '://' + peerHostname + '/' + creds.rpcPath, {
         peeringKeyPair: { pub: 'me' },
@@ -178,7 +178,7 @@ IlpNode.prototype = {
       console.log('created peer from peer caps!', peerHostname)
     } else {
       console.log('getting host info!')
-      this.stats.hosts[hash(peerHostname)] = Object.assign(this.stats.hosts[hash(peerHostname)], await getHostInfo(peerHostname, this.previousStats.hosts[peerHostname] || {}, this.fetch))
+      this.stats.hosts[hash(peerHostname)] = await getHostInfo(peerHostname, this.previousStats.hosts[peerHostname] || {}, this.fetch)
       console.log(this.stats.hosts)
       if (this.stats.hosts[hash(peerHostname)].pubKey && !this.peers[peerHostname]) {
         console.log('INSTANTIATING PEER!', peerHostname, 'should I act as a connector?', this.hostname, this.actAsConnector)
