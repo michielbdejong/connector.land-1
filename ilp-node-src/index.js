@@ -180,6 +180,7 @@ IlpNode.prototype = {
       console.log('getting host info!')
       const hostInfo = await getHostInfo(peerHostname, this.previousStats.hosts[peerHostname] || {}, this.fetch)
       console.log('got host info!', hostInfo)
+      this.creds.hosts[hash(peerHostname)] = Object.assign({ hostname: peerHostname }, hostInfo)
       this.stats.hosts[hash(peerHostname)] = {
         title: hostInfo.title || 'webfinger-peer-' + hostInfo.pubKey,
         pubKey: hostInfo.pubKey,
@@ -188,7 +189,7 @@ IlpNode.prototype = {
       console.log(this.stats.hosts)
       if (this.stats.hosts[hash(peerHostname)].pubKey && !this.peers[peerHostname]) {
         console.log('INSTANTIATING PEER!', peerHostname, 'should I act as a connector?', this.hostname, this.actAsConnector)
-        this.peers[peerHostname] = new Peer(this.stats.hosts[hash(peerHostname)].peersRpcUri, this.tokenStore, this.hopper, this.stats.hosts[hash(peerHostname)].pubKey, this.fetch, this.actAsConnector, this.testLedgerBase)
+        this.peers[peerHostname] = new Peer(this.creds.hosts[hash(peerHostname)].peersRpcUri, this.tokenStore, this.hopper, this.stats.hosts[hash(peerHostname)].pubKey, this.fetch, this.actAsConnector, this.testLedgerBase)
         console.log('created peer from WebFinger!', peerHostname)
       }
     }
@@ -204,7 +205,7 @@ IlpNode.prototype = {
     return this.testPeer(peerHostname)
   },
   testPeer: async function(testHostname) {
-    console.log('testing the peer!', testHostname, this.stats.hosts[hash(testHostname)])
+    console.log('testing the peer!', testHostname, this.creds.hosts[hash(testHostname)], this.stats.hosts[hash(testHostname)])
     await this.ensureReady()
     if (!this.peers[testHostname]) {
       console.warn('Attempt to test non-peer', testHostname)
