@@ -6,6 +6,12 @@ const Hopper = require('./lib/hopper').Hopper
 const crypto = require('crypto')
 const realFetch = require('node-fetch')
 
+function rollingAvg(existing, measured, factor) {
+  if (typeof existing === 'undefined') {
+    return measured
+  }
+  return (existing * (factor - 1) + measured) / factor
+}
 
 function hash(hostname) {
   if (typeof hostname !== 'string') {
@@ -195,9 +201,15 @@ IlpNode.prototype = {
       this.stats.hosts[hash(testHostname)] = {}
     }
     const startTime = new Date().getTime()
-    this.stats.hosts[hash(testHostname)].limit = await this.peers[testHostname].getLimit()
+    let success = 1
+    try {
+      this.stats.hosts[hash(testHostname)].limit = await this.peers[testHostname].getLimit()
+      this.stats.hosts[hash(testHostname)].lastDownTime = new Date().getTime()
+    } catch(e) {
+      success = 0
+    }
     this.stats.hosts[hash(testHostname)].latency = new Date().getTime() - startTime
-    this.stats.hosts[hash(testHostname)].lastDownTime = new Date().getTime()
+    this.stats.hosts[hash(testHostname)].health = rollingAvg(this.stats.hosts[hash(testHostname)].health, success, 100)
 
     // console.log('FOUND LIMIT!', testHostname, this.stats.hosts[hash(testHostname)].limit)
     this.stats.hosts[hash(testHostname)].balance = await this.peers[testHostname].getBalance()
