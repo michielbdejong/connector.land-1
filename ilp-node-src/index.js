@@ -166,7 +166,7 @@ IlpNode.prototype = {
       // this overwrites the existing values, but they were already moved to `this.previousStats`, and then
       // overwritten, at the start of testAll
       this.stats.hosts[hash(peerHostname)] = {
-        title: 'peer-' + hash(peerHostname).substring(0, 7),
+        title: 'ilp-secret-peer-' + hash(peerHostname).substring(0, 7),
         version: 'Unknown'
       }
 
@@ -178,7 +178,12 @@ IlpNode.prototype = {
       console.log('created peer from peer caps!', peerHostname)
     } else {
       console.log('getting host info!')
-      this.stats.hosts[hash(peerHostname)] = await getHostInfo(peerHostname, this.previousStats.hosts[peerHostname] || {}, this.fetch)
+      const hostInfo = await getHostInfo(peerHostname, this.previousStats.hosts[peerHostname] || {}, this.fetch)
+      console.log('got host info!', hostInfo)
+      this.stats.hosts[hash(peerHostname)] = {
+        title: hostInfo.title || 'webfinger-peer-' + hostInfo.pubKey,
+        version: hostInfo.version
+      }
       console.log(this.stats.hosts)
       if (this.stats.hosts[hash(peerHostname)].pubKey && !this.peers[peerHostname]) {
         console.log('INSTANTIATING PEER!', peerHostname, 'should I act as a connector?', this.hostname, this.actAsConnector)
