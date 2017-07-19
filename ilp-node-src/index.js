@@ -125,7 +125,7 @@ IlpNode.prototype = {
     this.tokenStore = new keypair.TokenStore(this.creds.keypair)
   },
   testAll: async function() {
-    // console.log('testAll!!!!testAll!!!!testAll!!!!testAll!!!!')
+    console.log('testAll!!!!testAll!!!!testAll!!!!testAll!!!!')
     const promises = []
     await this.ensureReady()
     this.previousStats = this.stats || { hosts: {}, ledger: {}, routes: {} } // for use in running averages
@@ -144,6 +144,7 @@ IlpNode.prototype = {
     }
     console.log('testAll peers (this.creds.hosts from kv-store)', this.creds.hosts)
     await Promise.all(promises)
+    console.log('saving stats', this.stats)
     await this.save('stats')
     await this.save('creds')
   },
@@ -163,6 +164,7 @@ IlpNode.prototype = {
         protocol = 'http'
       }
       if (!this.stats.hosts[hash(peerHostname)]) {
+        console.log('peerWithAndTest creating new stats entry', this.stats.hosts, hash(peerHostname))
         this.stats.hosts[hash(peerHostname)] = {}
       }
       this.stats.hosts[hash(peerHostname)].title = 'peer-' + hash(peerHostname).substring(0, 7)
@@ -176,7 +178,7 @@ IlpNode.prototype = {
       console.log('created peer from peer caps!', peerHostname)
     } else {
       console.log('getting host info!')
-      this.stats.hosts[hash(peerHostname)] = await getHostInfo(peerHostname, this.previousStats.hosts[peerHostname] || {}, this.fetch)
+      this.stats.hosts[hash(peerHostname)] = Object.assign(this.stats.hosts[hash(peerHostname)], await getHostInfo(peerHostname, this.previousStats.hosts[peerHostname] || {}, this.fetch))
       console.log(this.stats.hosts)
       if (this.stats.hosts[hash(peerHostname)].pubKey && !this.peers[peerHostname]) {
         console.log('INSTANTIATING PEER!', peerHostname, 'should I act as a connector?', this.hostname, this.actAsConnector)
@@ -196,13 +198,14 @@ IlpNode.prototype = {
     return this.testPeer(peerHostname)
   },
   testPeer: async function(testHostname) {
-    // console.log('testing the peer!', testHostname)
+    console.log('testing the peer!', testHostname, this.stats.hosts[hash(peerHostname)])
     await this.ensureReady()
     if (!this.peers[testHostname]) {
       console.warn('Attempt to test non-peer', testHostname)
       return
     }
     if (!this.stats.hosts[hash(testHostname)]) {
+      console.log('testPeer creating new stats entry', this.stats.hosts, hash(peerHostname))
       this.stats.hosts[hash(testHostname)] = {}
     }
     const startTime = new Date().getTime()
