@@ -153,6 +153,7 @@ IlpNode.prototype = {
       if (peerHostname.split(':')[0] === 'localhost') {
         protocol = 'http'
       }
+      this.stats.hosts[hash(peerHostname)] = {}
       this.peers[peerHostname] = new Peer(protocol + '://' + peerHostname + '/' + creds.rpcPath, {
         peeringKeyPair: { pub: 'me' },
         getToken: () => creds.token,
@@ -186,6 +187,9 @@ IlpNode.prototype = {
     if (!this.peers[testHostname]) {
       console.warn('Attempt to test non-peer', testHostname)
       return
+    }
+    if (!this.stats.hosts[hash(peerHostname)]) {
+      this.stats.hosts[hash(peerHostname)] = {}
     }
     this.stats.hosts[hash(testHostname)].limit = await this.peers[testHostname].getLimit()
     // console.log('FOUND LIMIT!', testHostname, this.stats.hosts[hash(testHostname)].limit)
