@@ -165,8 +165,8 @@ IlpNode.prototype = {
       if (!this.stats.hosts[hash(peerHostname)]) {
         this.stats.hosts[hash(peerHostname)] = {}
       }
-      this.stats.hosts[hash(peerHostname)].title: 'peer-' + hash(peerHostname).substring(0, 7)
-      this.stats.hosts[hash(peerHostname)].version: 'Unknown'
+      this.stats.hosts[hash(peerHostname)].title = 'peer-' + hash(peerHostname).substring(0, 7)
+      this.stats.hosts[hash(peerHostname)].version = 'Unknown'
 
       this.peers[peerHostname] = new Peer(protocol + '://' + peerHostname + '/' + creds.rpcPath, {
         peeringKeyPair: { pub: 'me' },
