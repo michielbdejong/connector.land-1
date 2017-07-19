@@ -8,7 +8,7 @@ const realFetch = require('node-fetch')
 
 function rollingAvg(existing, measured, factor) {
   if (typeof existing === 'undefined') {
-    console.log('rollingAvg', { existing, measured, factor, ret })
+    console.log('rollingAvg', { existing, measured, factor })
     return measured
   }
   const ret = (existing * (factor - 1) + measured) / factor
