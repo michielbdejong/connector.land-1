@@ -218,9 +218,10 @@ IlpNode.prototype = {
       success = 0
     }
     this.stats.hosts[hash(testHostname)].latency = new Date().getTime() - startTime
-    console.log('calling rollingAvg, before', this.previousStats.hosts[hash(testHostname)].health, this.stats.hosts[hash(testHostname)].health)
-    this.stats.hosts[hash(testHostname)].health = rollingAvg(this.previousStats.hosts[hash(testHostname)].health, success, 100)
-    console.log('calling rollingAvg, after', this.previousStats.hosts[hash(testHostname)].health, this.stats.hosts[hash(testHostname)].health)
+    const previousHealth = this.previousStats.hosts[hash(testHostname)] && this.previousStats.hosts[hash(testHostname)].health
+    console.log('calling rollingAvg, before', previousHealth, this.stats.hosts[hash(testHostname)].health)
+    this.stats.hosts[hash(testHostname)].health = rollingAvg(previousHealth, success, 100)
+    console.log('calling rollingAvg, after', previousHealth, this.stats.hosts[hash(testHostname)].health)
     console.log('stats updated', this.stats.hosts[hash(testHostname)])
 
     try {
