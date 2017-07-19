@@ -210,6 +210,7 @@ IlpNode.prototype = {
     }
     this.stats.hosts[hash(testHostname)].latency = new Date().getTime() - startTime
     this.stats.hosts[hash(testHostname)].health = rollingAvg(this.stats.hosts[hash(testHostname)].health, success, 100)
+    console.log('stats updated', this.stats.hosts[hash(testHostname)])
 
     // console.log('FOUND LIMIT!', testHostname, this.stats.hosts[hash(testHostname)].limit)
     this.stats.hosts[hash(testHostname)].balance = await this.peers[testHostname].getBalance()
