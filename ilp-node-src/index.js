@@ -10,7 +10,9 @@ function rollingAvg(existing, measured, factor) {
   if (typeof existing === 'undefined') {
     return measured
   }
-  return (existing * (factor - 1) + measured) / factor
+  const ret = (existing * (factor - 1) + measured) / factor
+  console.log('rollingAvg', { existing, measured, factor, ret })
+  return ret
 }
 
 function hash(hostname) {
