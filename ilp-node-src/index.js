@@ -8,6 +8,7 @@ const realFetch = require('node-fetch')
 
 function rollingAvg(existing, measured, factor) {
   if (typeof existing === 'undefined') {
+    console.log('rollingAvg', { existing, measured, factor, ret })
     return measured
   }
   const ret = (existing * (factor - 1) + measured) / factor
@@ -212,6 +213,7 @@ IlpNode.prototype = {
       success = 0
     }
     this.stats.hosts[hash(testHostname)].latency = new Date().getTime() - startTime
+    console.log('calling rollingAvg', this.stats.hosts[hash(testHostname)].health)
     this.stats.hosts[hash(testHostname)].health = rollingAvg(this.stats.hosts[hash(testHostname)].health, success, 100)
     console.log('stats updated', this.stats.hosts[hash(testHostname)])
 
