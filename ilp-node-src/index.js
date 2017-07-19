@@ -153,7 +153,9 @@ IlpNode.prototype = {
       if (peerHostname.split(':')[0] === 'localhost') {
         protocol = 'http'
       }
-      this.stats.hosts[hash(peerHostname)] = {}
+      this.stats.hosts[hash(peerHostname)] = {
+        title: 'peer-' + hash(peerHostname).substring(0, 7)
+      }
       this.peers[peerHostname] = new Peer(protocol + '://' + peerHostname + '/' + creds.rpcPath, {
         peeringKeyPair: { pub: 'me' },
         getToken: () => creds.token,
