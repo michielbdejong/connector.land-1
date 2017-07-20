@@ -17,24 +17,10 @@ const ilpNode = new IlpNode(redisClient, hostname, undefined, false, process.env
 
 const app = new Koa()
 app.use(async function(ctx, next) {
-  // console.log(ctx.path)
   switch(ctx.path) {
-  case '/.well-known/webfinger': ctx.body = await ilpNode.handleWebFinger(ctx.query.resource, '/spsp')
-    break
+  case '/.well-known/webfinger':
   case '/rpc':
-    let str = ''
-    await new Promise(resolve => {
-      ctx.req.on('data', chunk => str += chunk)
-      ctx.req.on('end', resolve)
-    })
-    // console.log('calling ilpNode.handleRpc')
-    ctx.body = await ilpNode.handleRpc(ctx.query, JSON.parse(str))
-    // console.log('returned from ilpNode.handleRpc')
-    break
-  case '/test':
-    console.log('test hit!', ctx.query)
-    ctx.body = await ilpNode.handleTest(ctx.query)
-    break
+    return ilpNode.server(ctx.req, ctx.res)
   case '/stats':
     await ilpNode.ensureReady()
     await ilpNode.collectLedgerStats(10000)
