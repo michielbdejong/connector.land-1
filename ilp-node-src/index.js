@@ -172,7 +172,7 @@ IlpNode.prototype = {
 
       this.peers[peerHostname] = new Peer(protocol + '://' + peerHostname + '/' + creds.rpcPath, {
         peeringKeyPair: { pub: 'me' },
-        getToken: () => creds.token,
+        getToken: () => { console.log(`Peer for ${peerHostname} gets token ${creds.token}`); return creds.token; },
         getLedgerPrefix: () => creds.ledgerPrefix
       }, this.hopper, 'peer', this.fetch, this.actAsConnector, this.testLedgerBase)
       console.log('created peer from peer caps!', peerHostname)
