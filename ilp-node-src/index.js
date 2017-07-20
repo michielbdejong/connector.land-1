@@ -292,6 +292,7 @@ IlpNode.prototype = {
     return this.peers[peerHostname].handleRpc(params, body)
   },
   handleTest: async function(params, res) {
+    console.log('handleTest', params)
     if (typeof params.peer !== 'string') {
       return 'Please provide either "?peer=ilp_secret:..." or "?peer=example.com" query parameter'
     }
