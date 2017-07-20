@@ -182,7 +182,7 @@ IlpNode.prototype = {
       console.log('got host info!', hostInfo)
       this.creds.hosts[hash(peerHostname)] = Object.assign({ hostname: peerHostname }, hostInfo)
       this.stats.hosts[hash(peerHostname)] = {
-        title: hostInfo.title || (hostInfo.pubKey ? 'webfinger-peer-' + hostInfo.pubKey : ''),
+        title: hostInfo.title || (hostInfo.pubKey ? 'webfinger-peer-' + hostInfo.pubKey : undefined),
         pubKey: hostInfo.pubKey,
         version: hostInfo.version
       }
