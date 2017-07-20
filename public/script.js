@@ -248,7 +248,7 @@ function formatData(obj){
     // Sort data
 
     rows.sort(
-      firstBy(v => (v.version === 'Compatible: ilp-kit v3.0.0-alpha2' ? 0 : (v.version === 'Compatible: ilp-kit v2.0.1' || v.version === 'Compatible: ilp-kit v2.0.2' ? 0.5 : 1)))
+      firstBy(v => (v.version === 'Compatible: ilp-kit v3.0.0-alpha3' ? 0 : (v.version.startsWith('Compatible: ilp-kit v3') || v.version.startsWith('Compatible: ilp-kit v2') ? 0.5 : 1)))
       .thenBy(v => Math.round(10 * v.health), -1)
       .thenBy('latency'))
 
