@@ -297,7 +297,7 @@ IlpNode.prototype = {
     }
     // 'ilp_secret:'+base64url(Buffer.from('https://' + CONNECTORLAND_LEDGER_PREFIX + ':' + token + '@' + ilpDomain + '/rpc', 'ascii'))
     if (params.peer.startsWith('ilp_secret:')) {
-      const peerCaps = Buffer.from(params.peer.substring('ilp_secret:'.length), 'base64').toString('ascii')
+      const peerCaps = Buffer.from(params.peer.split(':')[2], 'base64').toString('ascii')
       console.log('handling test', peerCaps)
       const [ /* 'PROTOCOL://LEDGER:TOKEN@HOST/PATH */, protocol, ledgerPrefix, token, hostname, rpcPath ] = peerCaps.match(/(http[s]{0,1}):\/\/(.*):(.*)\@(.*)\/(.*)/i)
       const uri = protocol + '://' + hostname + '/' + rpcPath
