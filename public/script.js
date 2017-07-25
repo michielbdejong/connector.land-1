@@ -305,7 +305,7 @@ function formatData(obj){
 
           // Emphasis
 
-          if (k == 'ledgerName' || k == 'address') v = v.replace(/([^.]+\.[^.]+\.)([^.]+)/, '$1<em>$2</em>')
+          // if (k == 'ledgerName' || k == 'address') v = v.replace(/([^.]+\.[^.]+\.)([^.]+)/, '$1<em>$2</em>')
 
           // Small text
 
