@@ -2,7 +2,8 @@ const Koa = require('koa')
 const koaStatic = require('koa-static')
 const IlpNode = require('../ilp-node-src')
 const redis = require("redis")
-
+const fs = require('fs')
+const connectors = JSON.parse(fs.readFileSync('public/connectors.json'))
 const publicFolder = process.env.PUBLIC_FOLDER || './public'
 const hostname = process.env.HOSTNAME || 'connector.land'
 const port = process.env.PORT || 6001 // avoid port 6000 because of https://superuser.com/questions/188058/which-ports-are-considered-unsafe-on-chrome
@@ -42,6 +43,7 @@ app.use(async function(ctx, next) {
       // console.log('testing!', ctx.query.test)
       await ilpNode.handleTest(ctx.query)
     }
+    ilpNode.stats.connectors = connectors
     ctx.body = ilpNode.stats
     break
   default:
