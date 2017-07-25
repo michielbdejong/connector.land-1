@@ -173,6 +173,7 @@ var config = {
     var root = $('.content')
 
     var html = $.map(config.columnOrder, function(cols, key){
+      console.log('data', cols, key, data)
       return '                  \
         <div class="section" data-id="' + key + '">  \
           <table class="' + key + '"> \
@@ -239,7 +240,7 @@ function formatData(obj){
     // Filter out empty rows
     rows = rows.filter(function(v){
       if (v == '') { return false }
-      if (v.title === undefined && v.ledgerName === undefined) { return false }
+      if (v.title === undefined && v.ledgerName === undefined && v.net === undefined) { return false }
       if (typeof v.ledgerName === 'string' && v.ledgerName.startsWith('g.dns.land.connector.')) { return false }
       return true
     })
