@@ -15,7 +15,7 @@ var config = {
   columnOrder: {
     hosts: 'title version lastDownTime health latency balance limit'.split(' '),
     ledgers: 'ledgerName routes network'.split(' '),
-    routes: 'comingsoon'.split(' ')
+    connectors: 'network address entry exit'.split(' ')
   },
 
 
@@ -40,8 +40,11 @@ var config = {
       network: 'Network'
     },
 
-    routes: {
-      comingsoon: 'Coming soon!'
+    connectors: {
+      network: 'Network',
+      address: 'Address',
+      entry: 'Entry node?',
+      exit: 'Exit node?'
     }
 
   }
