@@ -1,6 +1,8 @@
-[{
-  "net": "XRP",
-  "address": ["test.crypto.xrp.rPpjQCZL3tzXPo4Qx8Fm7Pe5s1Xsa98cHg"],
-  "entry": "yes",
-  "exit": "yes"
-}]
+{
+  "michiel-xrp": {
+    "net": "XRP",
+    "address": ["test.crypto.xrp.rPpjQCZL3tzXPo4Qx8Fm7Pe5s1Xsa98cHg"],
+    "entry": "yes",
+    "exit": "yes"
+  }
+}
