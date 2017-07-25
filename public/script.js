@@ -15,7 +15,7 @@ var config = {
   columnOrder: {
     hosts: 'title version lastDownTime health latency balance limit'.split(' '),
     ledgers: 'ledgerName routes network'.split(' '),
-    connectors: 'network address entry exit'.split(' ')
+    connectors: 'net address entry exit'.split(' ')
   },
 
 
@@ -41,7 +41,7 @@ var config = {
     },
 
     connectors: {
-      network: 'Network',
+      net: 'Network',
       address: 'Address',
       entry: 'Entry node?',
       exit: 'Exit node?'
