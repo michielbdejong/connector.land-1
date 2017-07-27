@@ -156,7 +156,7 @@ var config = {
     data = {}
     peerHostMap = {}
     for (var ledger in stats.ledgers) {
-      stats.ledgers[ledger].network = (ledger.startsWith('test.') ? 'TEST' : 'live')
+      stats.ledgers[ledger].network = (typeof ledger === 'string' && ledger.startsWith('test.') ? 'TEST' : 'live')
       peerHostMap[ledger] = stats.ledgers[ledger].hostname
     }
     for (var tab in stats) {
@@ -248,7 +248,9 @@ function formatData(obj){
     // Sort data
 
     rows.sort(
-      firstBy(v => (v.version === 'Compatible: ilp-kit v3.0.0-alpha3' ? 0 : (v.version.startsWith('Compatible: ilp-kit v3') || v.version.startsWith('Compatible: ilp-kit v2') ? 0.5 : 1)))
+      firstBy(v => (v.version === 'Compatible: ilp-kit v3.0.0-alpha3' ? 0 :
+          (typeof v.version === 'string' && (v.version.startsWith('Compatible: ilp-kit v3') || v.version.startsWith('Compatible: ilp-kit v2')) ? 0.5 : 1)
+      ))
       .thenBy(v => Math.round(10 * v.health), -1)
       .thenBy('latency'))
 
