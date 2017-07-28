@@ -4,5 +4,11 @@
     "address": "test.crypto.xrp.rPpjQCZL3tzXPo4Qx8Fm7Pe5s1Xsa98cHg",
     "entry": "yes",
     "exit": "yes"
+  },
+  "michiel-eth": {
+    "net": "ETH",
+    "address": "test.crypto.eth.rinkeby.0x596144741ac842bf4c5f976d01e5ca0e8b552963",
+    "entry": "yes",
+    "exit": "yes"
   }
 }
